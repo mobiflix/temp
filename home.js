@@ -35,7 +35,7 @@ const GENRE_MAP = {
   tv:    { name: 'TV Shows', type: 'trending', media: 'tv', icon: '📺' }
 };
 
-// ===== GENRE LIST (para sa More page) =====
+// ===== GENRE LIST =====
 const GENRE_LIST = [
   { id: 28,    name: 'Action',           icon: '💥', media: 'movie' },
   { id: 12,    name: 'Adventure',        icon: '🗺️', media: 'movie' },
@@ -70,6 +70,9 @@ let currentItem;
 let bannerItem;
 let currentView = 'details';
 
+// ===== HISTORY STATE TRACKING =====
+let historyStateStack = [];
+
 let viewAllState = { key: null, page: 1, maxPages: 500, loading: false, hasMore: true, initialized: false, seenIds: new Set() };
 let providerPageState = { providerId: null, providerName: '', providerType: 'provider', page: 1, maxPages: 500, loading: false, hasMore: true, initialized: false, seenIds: new Set() };
 let moviesPageState = { page: 1, maxPages: 500, loading: false, hasMore: true, initialized: false, seenIds: new Set() };
@@ -85,7 +88,7 @@ function filterNonIndian(results) {
   });
 }
 
-// ===== FETCH: TRENDING =====
+// ===== FETCH FUNCTIONS =====
 async function fetchTrending(type, page) {
   const url = `${BASE_URL}/trending/${type}/week?api_key=${API_KEY}&page=${page}`;
   const res = await fetch(url);
@@ -93,14 +96,12 @@ async function fetchTrending(type, page) {
   return { results: filterNonIndian(data.results), total_pages: data.total_pages || 1 };
 }
 
-// ===== FETCH: TOP RATED =====
 async function fetchTopRated(type, page) {
   const res = await fetch(`${BASE_URL}/${type}/top_rated?api_key=${API_KEY}&page=${page}`);
   const data = await res.json();
   return { results: filterNonIndian(data.results), total_pages: data.total_pages || 1 };
 }
 
-// ===== FETCH: ONGOING TV SHOWS =====
 async function fetchOngoingTV(page) {
   const today = new Date().toISOString().split('T')[0];
   const url = `${BASE_URL}/discover/tv?api_key=${API_KEY}` +
@@ -115,7 +116,6 @@ async function fetchOngoingTV(page) {
   return { results: data.results || [], total_pages: data.total_pages || 1 };
 }
 
-// ===== FETCH: COMPLETED TV SHOWS =====
 async function fetchCompletedTV(page) {
   const url = `${BASE_URL}/discover/tv?api_key=${API_KEY}` +
     `&sort_by=popularity.desc` +
@@ -128,7 +128,6 @@ async function fetchCompletedTV(page) {
   return { results: data.results || [], total_pages: data.total_pages || 1 };
 }
 
-// ===== FETCH: DISCOVER BY GENRE =====
 async function fetchByGenre(mediaType, genreId, page) {
   const url = `${BASE_URL}/discover/${mediaType}?api_key=${API_KEY}` +
     `&with_genres=${genreId}` +
@@ -140,7 +139,6 @@ async function fetchByGenre(mediaType, genreId, page) {
   return { results: data.results || [], total_pages: data.total_pages || 1 };
 }
 
-// ===== FETCH BY PROVIDER =====
 async function fetchByProvider(providerId, mediaType, page) {
   const url = `${BASE_URL}/discover/${mediaType}?api_key=${API_KEY}` +
     `&with_watch_providers=${providerId}` +
@@ -278,10 +276,161 @@ function renderGenresInMore() {
   });
 }
 
-// ===== OPEN GENRE PAGE =====
+// ============================================================
+// ===== HISTORY / BACK BUTTON MANAGEMENT =====
+// ============================================================
+
+// Magdagdag ng history state (para ma-capture ang back button)
+function pushHistoryState(type) {
+  history.pushState({ mobiflix: type, ts: Date.now() }, '');
+  historyStateStack.push(type);
+}
+
+// Alisin ang history state (kapag nagsara ng page/modal)
+function popHistoryState() {
+  if (historyStateStack.length > 0) {
+    historyStateStack.pop();
+    // Gamitin ang history.back() para alisin ang entry
+    history.back();
+  }
+}
+
+// I-handle ang back button ng phone
+window.addEventListener('popstate', function(e) {
+  // Kung may laman ang history stack, isara ang pinaka-bagong bukas
+  if (historyStateStack.length > 0) {
+    const last = historyStateStack[historyStateStack.length - 1];
+    historyStateStack.pop();
+
+    // Isara base sa type
+    if (last === 'player') {
+      closePlayerViewInternal();
+    } else if (last === 'modal') {
+      closeModalInternal();
+    } else if (last === 'page') {
+      closeAllPagesInternal();
+    }
+    return;
+  }
+
+  // Kung wala nang laman, hayaan na lang (normal back)
+});
+
+// ============================================================
+// ===== CLOSE FUNCTIONS (INTERNAL - WALANG HISTORY) =====
+// ============================================================
+
+function closePlayerViewInternal() {
+  // Lumabas sa fullscreen
+  if (document.fullscreenElement || document.webkitFullscreenElement) {
+    if (document.exitFullscreen) {
+      document.exitFullscreen().catch(function() {});
+    } else if (document.webkitExitFullscreen) {
+      document.webkitExitFullscreen();
+    }
+    if (screen.orientation && screen.orientation.unlock) {
+      screen.orientation.unlock();
+    }
+  }
+
+  // I-clear ang iframe at ibalik ang details view
+  document.getElementById('modal-video').src = '';
+  document.getElementById('player-view').style.display = 'none';
+  document.getElementById('details-view').style.display = 'block';
+}
+
+function closeModalInternal() {
+  closePlayerViewInternal();
+
+  document.getElementById('modal').style.display = 'none';
+  document.getElementById('modal-video').src = '';
+  document.body.style.overflow = '';
+  document.getElementById('details-view').style.display = 'block';
+  document.getElementById('player-view').style.display = 'none';
+}
+
+function closeAllPagesInternal() {
+  // Isara lahat ng pages
+  const pagesToClose = [
+    'view-all-page', 'provider-page', 'movies-page', 'series-page',
+    'my-list-page', 'more-page', 'search-modal', 'genre-page',
+    'ongoing-page', 'completed-page'
+  ];
+  pagesToClose.forEach(function(id) {
+    const el = document.getElementById(id);
+    if (el) {
+      el.classList.remove('open');
+      el.style.display = '';
+    }
+  });
+
+  // Isara rin ang modal kung bukas
+  document.getElementById('modal').style.display = 'none';
+  document.getElementById('modal-video').src = '';
+  document.getElementById('details-view').style.display = 'block';
+  document.getElementById('player-view').style.display = 'none';
+  document.body.style.overflow = '';
+
+  // I-clear ang history stack
+  historyStateStack = [];
+
+  setActiveNav('home');
+}
+
+// ============================================================
+// ===== CLOSE FUNCTIONS (USER-TRIGGERED - MAY HISTORY) =====
+// ============================================================
+
+function closeViewAll() {
+  popHistoryState();
+}
+
+function closeGenrePage() {
+  popHistoryState();
+}
+
+function closeOngoingPage() {
+  popHistoryState();
+}
+
+function closeCompletedPage() {
+  popHistoryState();
+}
+
+function closeProviderPage() {
+  popHistoryState();
+}
+
+function closeMoviesPage() {
+  popHistoryState();
+}
+
+function closeSeriesPage() {
+  popHistoryState();
+}
+
+function closeMyListPage() {
+  popHistoryState();
+}
+
+function closeMorePage() {
+  popHistoryState();
+}
+
+function closeSearchModal() {
+  popHistoryState();
+}
+
+function closeModal() {
+  popHistoryState();
+}
+
+// ============================================================
+// ===== PAGE OPENERS (NAGDU-DAG NG HISTORY STATE) =====
+// ============================================================
+
 function openGenrePage(genre) {
-  resetAllPages();
-  setActiveNav('more');
+  resetAllPagesSilent();
 
   const page = document.getElementById('genre-page');
   page.classList.add('open');
@@ -305,16 +454,9 @@ function openGenrePage(genre) {
   page.removeEventListener('scroll', genrePageScrollHandler);
   page.addEventListener('scroll', genrePageScrollHandler, { passive: true });
 
-  loadGenrePageBatch();
-}
-
-function closeGenrePage() {
-  const page = document.getElementById('genre-page');
-  page.classList.remove('open');
-  page.scrollTop = 0;
-  document.getElementById('genre-page-grid').innerHTML = '';
-  if (genrePageState.initialized) genrePageState.initialized = false;
   setActiveNav('more');
+  pushHistoryState('page');
+  loadGenrePageBatch();
 }
 
 function genrePageScrollHandler() {
@@ -370,8 +512,7 @@ async function loadGenrePageBatch() {
 
 // ===== ONGOING TV PAGE =====
 function openOngoingPage() {
-  resetAllPages();
-  setActiveNav('home');
+  resetAllPagesSilent();
   const page = document.getElementById('ongoing-page');
   page.classList.add('open');
   page.scrollTop = 0;
@@ -385,16 +526,9 @@ function openOngoingPage() {
   page.removeEventListener('scroll', ongoingPageScrollHandler);
   page.addEventListener('scroll', ongoingPageScrollHandler, { passive: true });
 
-  loadOngoingPageBatch();
-}
-
-function closeOngoingPage() {
-  const page = document.getElementById('ongoing-page');
-  page.classList.remove('open');
-  page.scrollTop = 0;
-  document.getElementById('ongoing-page-grid').innerHTML = '';
-  ongoingPageState.initialized = false;
   setActiveNav('home');
+  pushHistoryState('page');
+  loadOngoingPageBatch();
 }
 
 function ongoingPageScrollHandler() {
@@ -447,8 +581,7 @@ async function loadOngoingPageBatch() {
 
 // ===== COMPLETED TV PAGE =====
 function openCompletedPage() {
-  resetAllPages();
-  setActiveNav('home');
+  resetAllPagesSilent();
   const page = document.getElementById('completed-page');
   page.classList.add('open');
   page.scrollTop = 0;
@@ -462,16 +595,9 @@ function openCompletedPage() {
   page.removeEventListener('scroll', completedPageScrollHandler);
   page.addEventListener('scroll', completedPageScrollHandler, { passive: true });
 
-  loadCompletedPageBatch();
-}
-
-function closeCompletedPage() {
-  const page = document.getElementById('completed-page');
-  page.classList.remove('open');
-  page.scrollTop = 0;
-  document.getElementById('completed-page-grid').innerHTML = '';
-  completedPageState.initialized = false;
   setActiveNav('home');
+  pushHistoryState('page');
+  loadCompletedPageBatch();
 }
 
 function completedPageScrollHandler() {
@@ -524,7 +650,7 @@ async function loadCompletedPageBatch() {
 
 // ===== PROVIDER PAGE =====
 function openProviderPage(providerId, providerName, providerType) {
-  resetAllPages();
+  resetAllPagesSilent();
   const page = document.getElementById('provider-page');
   page.classList.add('open');
   page.scrollTop = 0;
@@ -549,16 +675,8 @@ function openProviderPage(providerId, providerName, providerType) {
   page.removeEventListener('scroll', providerPageScrollHandler);
   page.addEventListener('scroll', providerPageScrollHandler, { passive: true });
 
+  pushHistoryState('page');
   loadProviderBatch();
-}
-
-function closeProviderPage() {
-  const page = document.getElementById('provider-page');
-  page.classList.remove('open');
-  page.scrollTop = 0;
-  document.getElementById('provider-page-grid').innerHTML = '';
-  providerPageState.initialized = false;
-  setActiveNav('home');
 }
 
 function providerPageScrollHandler() {
@@ -646,6 +764,9 @@ function showDetails(item) {
 
   document.getElementById('modal').style.display = 'flex';
   document.body.style.overflow = 'hidden';
+
+  // Magdagdag ng history state para sa modal
+  pushHistoryState('modal');
 }
 
 // ===== BOOKMARK =====
@@ -696,15 +817,12 @@ function toggleAddToList() {
 function playNow() {
   if (!currentItem) return;
 
-  // Determine kung movie o TV show
   const isMovie = currentItem.media_type === 'movie' || (!currentItem.media_type && currentItem.title);
 
   let embedURL;
   if (isMovie) {
-    // MOVIE: https://zxcstream.icu/watch/movie/{id}
     embedURL = ZXCSTREAM_MOVIE + currentItem.id;
   } else {
-    // TV: https://zxcstream.icu/watch/tv/{id}
     embedURL = ZXCSTREAM_TV + currentItem.id;
   }
 
@@ -715,7 +833,10 @@ function playNow() {
   document.getElementById('details-view').style.display = 'none';
   document.getElementById('player-view').style.display = 'block';
 
-  // I-fullscreen ang player wrapper pagkatapos ng 300ms
+  // Magdagdag ng history state para sa player
+  pushHistoryState('player');
+
+  // I-fullscreen ang player wrapper
   setTimeout(function() {
     const wrapper = document.getElementById('player-wrapper');
     const isFullscreen = document.fullscreenElement || document.webkitFullscreenElement;
@@ -737,28 +858,8 @@ function playNow() {
   }, 300);
 }
 
-// ===== CLOSE MODAL =====
-function closeModal() {
-  if (document.fullscreenElement || document.webkitFullscreenElement) {
-    if (document.exitFullscreen) {
-      document.exitFullscreen();
-    } else if (document.webkitExitFullscreen) {
-      document.webkitExitFullscreen();
-    }
-    if (screen.orientation && screen.orientation.unlock) {
-      screen.orientation.unlock();
-    }
-  }
-
-  document.getElementById('modal').style.display = 'none';
-  document.getElementById('modal-video').src = '';
-  document.body.style.overflow = '';
-  document.getElementById('details-view').style.display = 'block';
-  document.getElementById('player-view').style.display = 'none';
-}
-
-// ===== RESET ALL PAGES =====
-function resetAllPages() {
+// ===== RESET ALL PAGES (WALANG HISTORY) =====
+function resetAllPagesSilent() {
   const pagesToClose = [
     'view-all-page', 'provider-page', 'movies-page', 'series-page',
     'my-list-page', 'more-page', 'search-modal', 'genre-page',
@@ -788,17 +889,13 @@ function resetAllPages() {
 
 // ===== MY LIST PAGE =====
 function openMyListPage() {
-  resetAllPages();
-  setActiveNav('mylist');
+  resetAllPagesSilent();
   const page = document.getElementById('my-list-page');
   page.classList.add('open');
   page.scrollTop = 0;
   renderMyList();
-}
-
-function closeMyListPage() {
-  document.getElementById('my-list-page').classList.remove('open');
-  setActiveNav('home');
+  setActiveNav('mylist');
+  pushHistoryState('page');
 }
 
 function renderMyList() {
@@ -843,25 +940,16 @@ async function fetchFullDetails(id, mediaType) {
 
 // ===== SEARCH =====
 function openSearchModal() {
-  resetAllPages();
-  setActiveNav('search');
+  resetAllPagesSilent();
   const modal = document.getElementById('search-modal');
   modal.classList.add('open');
   modal.scrollTop = 0;
   document.body.style.overflow = 'hidden';
+  setActiveNav('search');
+  pushHistoryState('page');
   setTimeout(function() {
     document.getElementById('search-input').focus();
   }, 200);
-}
-
-function closeSearchModal() {
-  const modal = document.getElementById('search-modal');
-  modal.classList.remove('open');
-  modal.scrollTop = 0;
-  document.getElementById('search-results').innerHTML = '';
-  document.getElementById('search-input').value = '';
-  document.body.style.overflow = '';
-  setActiveNav('home');
 }
 
 let searchTimeout;
@@ -888,7 +976,7 @@ async function searchTMDB() {
       img.src = `${IMG_W500}${item.poster_path}`;
       img.alt = item.title || item.name;
       img.onclick = function() {
-        closeSearchModal();
+        popHistoryState(); // isara ang search
         showDetails(item);
       };
       container.appendChild(img);
@@ -907,15 +995,23 @@ function setActiveNav(name) {
 }
 
 function goHome() {
-  resetAllPages();
+  // Kung may bukas na page o modal, isara muna
+  if (historyStateStack.length > 0) {
+    // Isara lahat nang sabay
+    closeAllPagesInternal();
+    // Alisin lahat ng history states
+    for (let i = 0; i < historyStateStack.length; i++) {
+      history.back();
+    }
+    historyStateStack = [];
+  }
   setActiveNav('home');
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 // ===== MOVIES PAGE =====
 function openMoviesPage() {
-  resetAllPages();
-  setActiveNav('movies');
+  resetAllPagesSilent();
   const page = document.getElementById('movies-page');
   page.classList.add('open');
   page.scrollTop = 0;
@@ -929,15 +1025,9 @@ function openMoviesPage() {
   page.removeEventListener('scroll', moviesPageScrollHandler);
   page.addEventListener('scroll', moviesPageScrollHandler, { passive: true });
 
+  setActiveNav('movies');
+  pushHistoryState('page');
   loadMoviesPageBatch();
-}
-
-function closeMoviesPage() {
-  const page = document.getElementById('movies-page');
-  page.classList.remove('open');
-  document.getElementById('movies-page-grid').innerHTML = '';
-  moviesPageState.initialized = false;
-  setActiveNav('home');
 }
 
 function moviesPageScrollHandler() {
@@ -993,8 +1083,7 @@ async function loadMoviesPageBatch() {
 
 // ===== SERIES PAGE =====
 function openSeriesPage() {
-  resetAllPages();
-  setActiveNav('series');
+  resetAllPagesSilent();
   const page = document.getElementById('series-page');
   page.classList.add('open');
   page.scrollTop = 0;
@@ -1008,15 +1097,9 @@ function openSeriesPage() {
   page.removeEventListener('scroll', seriesPageScrollHandler);
   page.addEventListener('scroll', seriesPageScrollHandler, { passive: true });
 
+  setActiveNav('series');
+  pushHistoryState('page');
   loadSeriesPageBatch();
-}
-
-function closeSeriesPage() {
-  const page = document.getElementById('series-page');
-  page.classList.remove('open');
-  document.getElementById('series-page-grid').innerHTML = '';
-  seriesPageState.initialized = false;
-  setActiveNav('home');
 }
 
 function seriesPageScrollHandler() {
@@ -1072,22 +1155,18 @@ async function loadSeriesPageBatch() {
 
 // ===== MORE PAGE =====
 function openMorePage() {
-  resetAllPages();
-  setActiveNav('more');
+  resetAllPagesSilent();
   const page = document.getElementById('more-page');
   page.classList.add('open');
   page.scrollTop = 0;
   renderGenresInMore();
-}
-
-function closeMorePage() {
-  document.getElementById('more-page').classList.remove('open');
-  setActiveNav('home');
+  setActiveNav('more');
+  pushHistoryState('page');
 }
 
 // ===== VIEW ALL PAGE =====
 function openViewAll(key) {
-  resetAllPages();
+  resetAllPagesSilent();
   const genre = GENRE_MAP[key];
   if (!genre) return;
 
@@ -1107,6 +1186,7 @@ function openViewAll(key) {
   page.removeEventListener('scroll', viewAllScrollHandler);
   page.addEventListener('scroll', viewAllScrollHandler, { passive: true });
 
+  pushHistoryState('page');
   loadViewAllBatch();
 }
 
@@ -1155,16 +1235,6 @@ async function loadViewAllBatch() {
   }
 }
 
-function closeViewAll() {
-  const page = document.getElementById('view-all-page');
-  page.classList.remove('open');
-  page.scrollTop = 0;
-  document.getElementById('view-all-grid').innerHTML = '';
-  viewAllState.initialized = false;
-  viewAllState.seenIds = new Set();
-  setActiveNav('home');
-}
-
 let viewAllScrollTimer = null;
 
 function viewAllScrollHandler() {
@@ -1185,6 +1255,9 @@ function viewAllScrollHandler() {
 async function init() {
   try {
     console.log('[MobiFlix] Initializing...');
+
+    // I-replace ang kasalukuyang history entry
+    history.replaceState({ mobiflix: 'home' }, '');
 
     renderProviders();
 
@@ -1209,7 +1282,7 @@ async function init() {
     completedData.results.forEach(function(item) { item.media_type = 'tv'; });
     appendToList(completedData.results, 'completed-tv-list');
 
-    console.log('[MobiFlix] Ready. Ongoing:', ongoingData.results.length, 'Completed:', completedData.results.length);
+    console.log('[MobiFlix] Ready.');
   } catch (err) {
     console.error('[MobiFlix] Init error:', err);
   }
@@ -1220,17 +1293,10 @@ init();
 // ===== KEYBOARD =====
 document.addEventListener('keydown', function(e) {
   if (e.key === 'Escape') {
-    closeModal();
-    closeSearchModal();
-    closeViewAll();
-    closeProviderPage();
-    closeMoviesPage();
-    closeSeriesPage();
-    closeMorePage();
-    closeMyListPage();
-    closeGenrePage();
-    closeOngoingPage();
-    closeCompletedPage();
+    // Kung may laman ang history stack, isara ang pinaka-bagong
+    if (historyStateStack.length > 0) {
+      popHistoryState();
+    }
   }
 });
 
