@@ -8,15 +8,15 @@
   <meta http-equiv="Expires" content="0">
   <title>MobiFlix</title>
 
-  <link rel="stylesheet" href="home.css?v=17">
-  <link rel="manifest" href="manifest.json?v=17">
+  <link rel="stylesheet" href="home.css?v=18">
+  <link rel="manifest" href="manifest.json?v=18">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-  <script defer src="auth.js?v=17"></script>
-  <script defer src="home.js?v=17"></script>
+  <script defer src="auth.js?v=18"></script>
+  <script defer src="home.js?v=18"></script>
 
   <script>
     (function() {
-      const CURRENT_VERSION = 'v17';
+      const CURRENT_VERSION = 'v18';
       const CHECK_INTERVAL = 60000;
 
       async function checkForUpdates() {
@@ -100,6 +100,7 @@
     <!-- ===== CONTENT ROWS ===== -->
     <div class="content">
 
+      <!-- STREAMING PROVIDERS -->
       <div class="row providers-row">
         <div class="row-header">
           <h2>📡 Streaming Providers</h2>
@@ -107,6 +108,7 @@
         <div class="providers-scroll" id="providers-list"></div>
       </div>
 
+      <!-- TOP 10 MOVIES -->
       <div class="row">
         <div class="row-header">
           <h2>🔥 Top 10 Movies Today</h2>
@@ -115,6 +117,7 @@
         <div class="top10-scroll" id="top10-movies"></div>
       </div>
 
+      <!-- TOP 10 TV -->
       <div class="row">
         <div class="row-header">
           <h2>📺 Top 10 TV Shows Today</h2>
@@ -123,6 +126,7 @@
         <div class="top10-scroll" id="top10-tv"></div>
       </div>
 
+      <!-- ONGOING TV SHOWS -->
       <div class="row">
         <div class="row-header">
           <h2>🔴 Ongoing TV Shows</h2>
@@ -131,6 +135,7 @@
         <div class="list horizontal-scroll" id="ongoing-tv-list"></div>
       </div>
 
+      <!-- COMPLETED TV SHOWS -->
       <div class="row">
         <div class="row-header">
           <h2>✅ Completed TV Shows</h2>
@@ -260,7 +265,7 @@
       </div>
     </div>
 
-    <!-- ===== MORE PAGE ===== -->
+    <!-- ===== MORE PAGE (GENRES + LOGOUT) ===== -->
     <div class="more-page" id="more-page">
       <div class="view-all-header">
         <button class="back-btn" onclick="closeMorePage()"><i class="fa fa-arrow-left"></i> Back</button>
@@ -328,34 +333,6 @@
       </div>
     </div>
 
-    <!-- ===== BOTTOM NAVIGATION BAR ===== -->
-    <div class="bottom-nav">
-      <a class="bottom-nav-item active" onclick="goHome()">
-        <i class="fa fa-home"></i>
-        <span>Home</span>
-      </a>
-      <a class="bottom-nav-item" onclick="openSearchModal()">
-        <i class="fa fa-search"></i>
-        <span>Search</span>
-      </a>
-      <a class="bottom-nav-item" onclick="openMoviesPage()">
-        <i class="fa fa-film"></i>
-        <span>Movies</span>
-      </a>
-      <a class="bottom-nav-item" onclick="openSeriesPage()">
-        <i class="fa fa-tv"></i>
-        <span>Series</span>
-      </a>
-      <a class="bottom-nav-item" onclick="openMyListPage()">
-        <i class="fa fa-bookmark"></i>
-        <span>My List</span>
-      </a>
-      <a class="bottom-nav-item" onclick="openMorePage()">
-        <i class="fa fa-bars"></i>
-        <span>More</span>
-      </a>
-    </div>
-
     <!-- ===== FOOTER ===== -->
     <footer class="footer">
       <div class="footer-content">
@@ -369,5 +346,34 @@
     </footer>
 
   </div><!-- /#app-content -->
+
+  <!-- ===== BOTTOM NAVIGATION BAR (NASA LABAS NA NG app-content) ===== -->
+  <div class="bottom-nav">
+    <a class="bottom-nav-item active" onclick="goHome()">
+      <i class="fa fa-home"></i>
+      <span>Home</span>
+    </a>
+    <a class="bottom-nav-item" onclick="openSearchModal()">
+      <i class="fa fa-search"></i>
+      <span>Search</span>
+    </a>
+    <a class="bottom-nav-item" onclick="openMoviesPage()">
+      <i class="fa fa-film"></i>
+      <span>Movies</span>
+    </a>
+    <a class="bottom-nav-item" onclick="openSeriesPage()">
+      <i class="fa fa-tv"></i>
+      <span>Series</span>
+    </a>
+    <a class="bottom-nav-item" onclick="openMyListPage()">
+      <i class="fa fa-bookmark"></i>
+      <span>My List</span>
+    </a>
+    <a class="bottom-nav-item" onclick="openMorePage()">
+      <i class="fa fa-bars"></i>
+      <span>More</span>
+    </a>
+  </div>
+
 </body>
 </html>
