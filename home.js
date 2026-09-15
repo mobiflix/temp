@@ -77,10 +77,12 @@ let completedPageState = {};
 // POPSTATE HANDLER
 // ============================================================
 window.addEventListener('popstate', function(e) {
+  // IMPORTANT: Laging i-reset ang body overflow
+  document.body.style.overflow = '';
+
   const modal = document.getElementById('modal');
   if (modal && modal.style.display === 'flex') {
     modal.style.display = 'none';
-    document.body.style.overflow = '';
     return;
   }
 
@@ -174,7 +176,7 @@ async function fetchSimilar(mediaType, id) {
 
     return filterNonIndian(data.results || []).filter(function(x) {
       return x.poster_path;
-    }).slice(0, 9);
+    }).slice(0, 15);
   } catch (err) {
     console.error('[Similar]', err);
     return [];
@@ -318,6 +320,8 @@ function closeAllPagesOnly() {
       el.scrollTop = 0;
     }
   });
+  // Laging i-reset ang body overflow
+  document.body.style.overflow = '';
 }
 
 function closeModalOnly() {
@@ -335,7 +339,12 @@ function closeMoviesPage() { closeAllPagesOnly(); setActiveNav('home'); }
 function closeSeriesPage() { closeAllPagesOnly(); setActiveNav('home'); }
 function closeMyListPage() { closeAllPagesOnly(); setActiveNav('home'); }
 function closeMorePage() { closeAllPagesOnly(); setActiveNav('home'); }
-function closeSearchModal() { closeAllPagesOnly(); setActiveNav('home'); }
+
+function closeSearchModal() {
+  closeAllPagesOnly();
+  document.body.style.overflow = '';
+  setActiveNav('home');
+}
 
 function closeModal() {
   if (history.state && history.state.mobiflixModal) {
@@ -645,7 +654,7 @@ async function showDetails(item) {
   history.pushState({ mobiflixModal: true }, '');
 
   document.getElementById('cast-list').innerHTML = '<div style="color:#666;padding:10px 0;">Loading cast...</div>';
-  document.getElementById('similar-list').innerHTML = '<div style="color:#666;padding:10px 0;grid-column:1/-1;">Loading recommendations...</div>';
+  document.getElementById('similar-list').innerHTML = '<div style="color:#666;padding:10px 0;flex-shrink:0;">Loading recommendations...</div>';
 
   const mediaType = item.media_type || (item.title ? 'movie' : 'tv');
   const itemId = item.id;
@@ -703,7 +712,7 @@ function renderSimilar(similar, mediaType) {
   container.innerHTML = '';
 
   if (!similar || similar.length === 0) {
-    container.innerHTML = '<div style="color:#666;padding:10px 0;grid-column:1/-1;">No recommendations available.</div>';
+    container.innerHTML = '<div style="color:#666;padding:10px 0;flex-shrink:0;">No recommendations available.</div>';
     return;
   }
 
@@ -856,7 +865,7 @@ function openSearchModal() {
   modal.classList.add('open');
   modal.scrollTop = 0;
   document.body.style.overflow = 'hidden';
-  setActiveNav('search');
+  setActiveNav('home');
   setTimeout(function() {
     document.getElementById('search-input').focus();
   }, 200);
