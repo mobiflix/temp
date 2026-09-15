@@ -539,6 +539,10 @@ async function loadProviderBatch() {
   }
 }
 
+// ============================================================
+// SHOW DETAILS
+// ============================================================
+
 function showDetails(item) {
   currentItem = item;
 
@@ -612,7 +616,7 @@ function toggleAddToList() {
 }
 
 // ============================================================
-// PLAY NOW — BUBUKAS SA BAGONG TAB (with focus fix)
+// PLAY NOW — BUBUKAS SA BAGONG TAB
 // ============================================================
 
 function playNow() {
@@ -630,18 +634,7 @@ function playNow() {
   console.log('[MobiFlix Player] Opening in new tab:', embedURL);
 
   // Buksan sa bagong tab
-  const newTab = window.open(embedURL, '_blank');
-
-  // IMPORTANT: I-focus pabalik ang current tab pagkatapos
-  // (pero hindi agad-agad, para hindi ma-cancel ang pag-open ng bagong tab)
-  if (newTab) {
-    // I-close ang details modal para malinis pagbalik
-    setTimeout(function() {
-      closeModalOnly();
-      // I-focus pabalik sa current window
-      window.focus();
-    }, 100);
-  }
+  window.open(embedURL, '_blank');
 }
 
 // ============================================================
@@ -649,6 +642,7 @@ function playNow() {
 // ============================================================
 
 function openMyListPage() {
+  closeModalOnly();
   closeAllPagesOnly();
   const page = document.getElementById('my-list-page');
   page.classList.add('open');
@@ -700,6 +694,7 @@ async function fetchFullDetails(id, mediaType) {
 // ============================================================
 
 function openSearchModal() {
+  closeModalOnly();
   closeAllPagesOnly();
   const modal = document.getElementById('search-modal');
   modal.classList.add('open');
@@ -768,6 +763,7 @@ function goHome() {
 // ============================================================
 
 function openMoviesPage() {
+  closeModalOnly();
   closeAllPagesOnly();
   const page = document.getElementById('movies-page');
   page.classList.add('open');
@@ -837,6 +833,7 @@ async function loadMoviesPageBatch() {
 // ============================================================
 
 function openSeriesPage() {
+  closeModalOnly();
   closeAllPagesOnly();
   const page = document.getElementById('series-page');
   page.classList.add('open');
@@ -906,6 +903,7 @@ async function loadSeriesPageBatch() {
 // ============================================================
 
 function openMorePage() {
+  closeModalOnly();
   closeAllPagesOnly();
   const page = document.getElementById('more-page');
   page.classList.add('open');
@@ -919,6 +917,7 @@ function openMorePage() {
 // ============================================================
 
 function openViewAll(key) {
+  closeModalOnly();
   closeAllPagesOnly();
   const genre = GENRE_MAP[key];
   if (!genre) return;
