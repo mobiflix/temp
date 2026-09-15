@@ -72,6 +72,35 @@ let genrePageState = {};
 let ongoingPageState = {};
 let completedPageState = {};
 
+// ============================================================
+// POPSTATE HANDLER — Back button ng phone
+// ============================================================
+window.addEventListener('popstate', function(e) {
+  // Kung may bukas na modal, isara lang
+  const modal = document.getElementById('modal');
+  if (modal && modal.style.display === 'flex') {
+    modal.style.display = 'none';
+    document.body.style.overflow = '';
+    return;
+  }
+
+  // Kung may bukas na pages, isara
+  const openPages = [
+    'search-modal', 'more-page', 'my-list-page', 'series-page',
+    'movies-page', 'provider-page', 'genre-page', 'ongoing-page',
+    'completed-page', 'view-all-page'
+  ];
+  for (let i = 0; i < openPages.length; i++) {
+    const el = document.getElementById(openPages[i]);
+    if (el && el.classList.contains('open')) {
+      el.classList.remove('open');
+      el.scrollTop = 0;
+      setActiveNav('home');
+      return;
+    }
+  }
+});
+
 function filterNonIndian(results) {
   return (results || []).filter(function(item) {
     return !INDIAN_LANGS.includes(item.original_language);
@@ -274,7 +303,15 @@ function closeSeriesPage() { closeAllPagesOnly(); setActiveNav('home'); }
 function closeMyListPage() { closeAllPagesOnly(); setActiveNav('home'); }
 function closeMorePage() { closeAllPagesOnly(); setActiveNav('home'); }
 function closeSearchModal() { closeAllPagesOnly(); setActiveNav('home'); }
-function closeModal() { closeModalOnly(); }
+
+function closeModal() {
+  // Kung may history entry para sa modal, i-trigger ang back
+  if (history.state && history.state.mobiflixModal) {
+    history.back();
+  } else {
+    closeModalOnly();
+  }
+}
 
 // ============================================================
 // PAGE OPENERS
@@ -570,6 +607,9 @@ function showDetails(item) {
 
   document.getElementById('modal').style.display = 'flex';
   document.body.style.overflow = 'hidden';
+
+  // Magdagdag ng history entry para sa modal
+  history.pushState({ mobiflixModal: true }, '');
 }
 
 function getWatchlist() {
@@ -752,8 +792,25 @@ function setActiveNav(name) {
 }
 
 function goHome() {
-  closeModalOnly();
-  closeAllPagesOnly();
+  // Isara lahat nang walang history push
+  const modal = document.getElementById('modal');
+  if (modal) modal.style.display = 'none';
+
+  const pagesToClose = [
+    'view-all-page', 'provider-page', 'movies-page', 'series-page',
+    'my-list-page', 'more-page', 'search-modal', 'genre-page',
+    'ongoing-page', 'completed-page'
+  ];
+  pagesToClose.forEach(function(id) {
+    const el = document.getElementById(id);
+    if (el) {
+      el.classList.remove('open');
+      el.scrollTop = 0;
+    }
+  });
+
+  document.body.style.overflow = '';
+
   setActiveNav('home');
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
@@ -1041,7 +1098,11 @@ document.addEventListener('keydown', function(e) {
   if (e.key === 'Escape') {
     const modal = document.getElementById('modal');
     if (modal && modal.style.display === 'flex') {
-      closeModalOnly();
+      if (history.state && history.state.mobiflixModal) {
+        history.back();
+      } else {
+        closeModalOnly();
+      }
       return;
     }
     closeAllPagesOnly();
