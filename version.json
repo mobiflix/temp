@@ -1,5 +1,5 @@
 {
-  "version": "v19",
+  "version": "v20",
   "released": "2026-09-15",
-  "notes": "Back button ng phone sa details modal - babalik na sa homepage"
+  "notes": "Search sa upper right, Cast at You May Also Like sa details, auto-landscape sa player"
 }
