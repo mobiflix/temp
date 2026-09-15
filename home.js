@@ -240,7 +240,7 @@ function renderGenresInMore() {
 }
 
 // ============================================================
-// ===== CLOSE FUNCTIONS =====
+// CLOSE FUNCTIONS
 // ============================================================
 
 function closeAllPagesOnly() {
@@ -258,26 +258,11 @@ function closeAllPagesOnly() {
   });
 }
 
-function closePlayerOnly() {
-  const playerView = document.getElementById('player-view');
-  const detailsView = document.getElementById('details-view');
-  const video = document.getElementById('modal-video');
-
-  if (playerView) playerView.style.display = 'none';
-  if (detailsView) detailsView.style.display = 'block';
-  if (video) video.src = '';
-}
-
 function closeModalOnly() {
-  closePlayerOnly();
   const modal = document.getElementById('modal');
   if (modal) modal.style.display = 'none';
   document.body.style.overflow = '';
 }
-
-// ============================================================
-// ===== USER-TRIGGERED CLOSE =====
-// ============================================================
 
 function closeViewAll() { closeAllPagesOnly(); setActiveNav('home'); }
 function closeGenrePage() { closeAllPagesOnly(); setActiveNav('more'); }
@@ -289,20 +274,10 @@ function closeSeriesPage() { closeAllPagesOnly(); setActiveNav('home'); }
 function closeMyListPage() { closeAllPagesOnly(); setActiveNav('home'); }
 function closeMorePage() { closeAllPagesOnly(); setActiveNav('home'); }
 function closeSearchModal() { closeAllPagesOnly(); setActiveNav('home'); }
-
-function closeModal() {
-  // Kung nasa player, isara lang ang player at balik sa details
-  const playerView = document.getElementById('player-view');
-  if (playerView && playerView.style.display === 'block') {
-    closePlayerOnly();
-    return;
-  }
-  // Kung nasa details, isara lahat
-  closeModalOnly();
-}
+function closeModal() { closeModalOnly(); }
 
 // ============================================================
-// ===== PAGE OPENERS =====
+// PAGE OPENERS
 // ============================================================
 
 function openGenrePage(genre) {
@@ -589,13 +564,6 @@ function showDetails(item) {
 
   updateBookmarkUI(item);
 
-  // Reset player
-  const playerView = document.getElementById('player-view');
-  const video = document.getElementById('modal-video');
-  if (playerView) playerView.style.display = 'none';
-  if (video) video.src = '';
-
-  document.getElementById('details-view').style.display = 'block';
   document.getElementById('modal').style.display = 'flex';
   document.body.style.overflow = 'hidden';
 }
@@ -644,7 +612,7 @@ function toggleAddToList() {
 }
 
 // ============================================================
-// ===== PLAY NOW (SIMPLE - WALANG FULLSCREEN SCRIPT) =====
+// PLAY NOW — BUBUKAS SA BAGONG TAB
 // ============================================================
 
 function playNow() {
@@ -659,20 +627,14 @@ function playNow() {
     embedURL = ZXCSTREAM_TV + currentItem.id;
   }
 
-  console.log('[MobiFlix Player]', embedURL);
+  console.log('[MobiFlix Player] Opening in new tab:', embedURL);
 
-  const video = document.getElementById('modal-video');
-  video.src = embedURL;
-
-  document.getElementById('details-view').style.display = 'none';
-  document.getElementById('player-view').style.display = 'block';
-
-  // WALANG requestFullscreen! Hayaan ang user na mag-fullscreen gamit ang
-  // fullscreen button sa loob ng Zxcstream player mismo.
+  // Buksan sa bagong tab
+  window.open(embedURL, '_blank');
 }
 
 // ============================================================
-// ===== MY LIST PAGE =====
+// MY LIST PAGE
 // ============================================================
 
 function openMyListPage() {
@@ -723,7 +685,7 @@ async function fetchFullDetails(id, mediaType) {
 }
 
 // ============================================================
-// ===== SEARCH =====
+// SEARCH
 // ============================================================
 
 function openSearchModal() {
@@ -771,7 +733,7 @@ async function searchTMDB() {
 }
 
 // ============================================================
-// ===== BOTTOM NAV =====
+// BOTTOM NAV
 // ============================================================
 
 function setActiveNav(name) {
@@ -791,7 +753,7 @@ function goHome() {
 }
 
 // ============================================================
-// ===== MOVIES PAGE =====
+// MOVIES PAGE
 // ============================================================
 
 function openMoviesPage() {
@@ -860,7 +822,7 @@ async function loadMoviesPageBatch() {
 }
 
 // ============================================================
-// ===== SERIES PAGE =====
+// SERIES PAGE
 // ============================================================
 
 function openSeriesPage() {
@@ -929,7 +891,7 @@ async function loadSeriesPageBatch() {
 }
 
 // ============================================================
-// ===== MORE PAGE =====
+// MORE PAGE
 // ============================================================
 
 function openMorePage() {
@@ -942,7 +904,7 @@ function openMorePage() {
 }
 
 // ============================================================
-// ===== VIEW ALL PAGE =====
+// VIEW ALL PAGE
 // ============================================================
 
 function openViewAll(key) {
@@ -1026,7 +988,7 @@ function viewAllScrollHandler() {
 }
 
 // ============================================================
-// ===== INIT =====
+// INIT
 // ============================================================
 
 async function init() {
@@ -1062,16 +1024,11 @@ async function init() {
 init();
 
 // ============================================================
-// ===== KEYBOARD =====
+// KEYBOARD
 // ============================================================
 
 document.addEventListener('keydown', function(e) {
   if (e.key === 'Escape') {
-    const playerView = document.getElementById('player-view');
-    if (playerView && playerView.style.display === 'block') {
-      closePlayerOnly();
-      return;
-    }
     const modal = document.getElementById('modal');
     if (modal && modal.style.display === 'flex') {
       closeModalOnly();
@@ -1082,7 +1039,7 @@ document.addEventListener('keydown', function(e) {
 });
 
 // ============================================================
-// ===== LOGOUT =====
+// LOGOUT
 // ============================================================
 
 function handleLogout() {
