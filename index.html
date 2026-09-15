@@ -8,15 +8,15 @@
   <meta http-equiv="Expires" content="0">
   <title>MobiFlix</title>
 
-  <link rel="stylesheet" href="home.css?v=14">
-  <link rel="manifest" href="manifest.json?v=14">
+  <link rel="stylesheet" href="home.css?v=16">
+  <link rel="manifest" href="manifest.json?v=16">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-  <script defer src="auth.js?v=14"></script>
-  <script defer src="home.js?v=14"></script>
+  <script defer src="auth.js?v=16"></script>
+  <script defer src="home.js?v=16"></script>
 
   <script>
     (function() {
-      const CURRENT_VERSION = 'v14';
+      const CURRENT_VERSION = 'v16';
       const CHECK_INTERVAL = 60000;
 
       async function checkForUpdates() {
@@ -280,11 +280,10 @@
       <div class="results" id="search-results"></div>
     </div>
 
-    <!-- ===== DETAILS MODAL (MAY PLAYER NA) ===== -->
+    <!-- ===== DETAILS MODAL (WALANG IFRAME PLAYER) ===== -->
     <div class="modal" id="modal">
       <div class="modal-content">
 
-        <!-- DETAILS VIEW -->
         <div class="details-view" id="details-view">
           <div class="details-poster">
             <img id="modal-poster" src="" alt="" />
@@ -312,13 +311,6 @@
             </div>
 
             <p class="details-description" id="modal-description"></p>
-          </div>
-        </div>
-
-        <!-- PLAYER VIEW -->
-        <div class="player-view" id="player-view">
-          <div class="player-wrapper" id="player-wrapper">
-            <iframe id="modal-video" frameborder="0" allowfullscreen allow="autoplay; encrypted-media; picture-in-picture"></iframe>
           </div>
         </div>
 
