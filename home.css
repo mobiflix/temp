@@ -396,22 +396,6 @@ body {
   margin-bottom: 24px;
 }
 
-.back-btn {
-  background: rgba(255,255,255,0.06);
-  border: 1px solid rgba(255,255,255,0.1);
-  color: #fff;
-  padding: 10px 22px;
-  border-radius: 60px;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: 0.2s;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-.back-btn:hover { background: #e50914; border-color: #e50914; }
-
 .view-all-header h2 { font-size: 26px; font-weight: 700; color: #fff; }
 
 /* ===== GRID — 4 PER ROW ===== */
@@ -519,19 +503,6 @@ body {
   0% { opacity: 0; transform: translateY(20px); }
   100% { opacity: 1; transform: translateY(0); }
 }
-
-.modal-back-bar { position: absolute; top: 12px; left: 16px; z-index: 10; }
-.modal-back-btn {
-  background: rgba(0,0,0,0.7);
-  border: 1px solid rgba(255,255,255,0.1);
-  color: #fff; padding: 8px 18px;
-  border-radius: 60px; font-size: 14px;
-  font-weight: 500; cursor: pointer;
-  transition: 0.2s; display: flex;
-  align-items: center; gap: 8px;
-  backdrop-filter: blur(6px);
-}
-.modal-back-btn:hover { background: #e50914; border-color: #e50914; }
 
 /* ===== DETAILS VIEW ===== */
 .details-view { display: block; }
@@ -896,8 +867,6 @@ body.locked { overflow: hidden; }
 
   .search-container { padding: 10px 16px; }
   .search-container input { font-size: 15px; }
-
-  .modal-back-btn { padding: 6px 14px; font-size: 13px; }
 
   .bottom-nav { height: 64px; }
   .bottom-nav-item { font-size: 9px; padding: 6px 4px; }
