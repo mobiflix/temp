@@ -8,15 +8,15 @@
   <meta http-equiv="Expires" content="0">
   <title>MobiFlix</title>
 
-  <link rel="stylesheet" href="home.css?v=19">
-  <link rel="manifest" href="manifest.json?v=19">
+  <link rel="stylesheet" href="home.css?v=20">
+  <link rel="manifest" href="manifest.json?v=20">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-  <script defer src="auth.js?v=19"></script>
-  <script defer src="home.js?v=19"></script>
+  <script defer src="auth.js?v=20"></script>
+  <script defer src="home.js?v=20"></script>
 
   <script>
     (function() {
-      const CURRENT_VERSION = 'v19';
+      const CURRENT_VERSION = 'v20';
       const CHECK_INTERVAL = 60000;
 
       async function checkForUpdates() {
@@ -72,10 +72,15 @@
   <!-- ===== BUONG APP ===== -->
   <div id="app-content">
 
-    <!-- ===== NAVBAR ===== -->
+    <!-- ===== NAVBAR (may search sa upper right) ===== -->
     <nav class="navbar">
       <div class="nav-left">
         <a href="index.html" class="logo">Mobi<span>Flix</span></a>
+      </div>
+      <div class="nav-right">
+        <button class="nav-search-btn" onclick="openSearchModal()" aria-label="Search">
+          <i class="fa fa-search"></i>
+        </button>
       </div>
     </nav>
 
@@ -100,7 +105,6 @@
     <!-- ===== CONTENT ROWS ===== -->
     <div class="content">
 
-      <!-- STREAMING PROVIDERS -->
       <div class="row providers-row">
         <div class="row-header">
           <h2>📡 Streaming Providers</h2>
@@ -108,7 +112,6 @@
         <div class="providers-scroll" id="providers-list"></div>
       </div>
 
-      <!-- TOP 10 MOVIES -->
       <div class="row">
         <div class="row-header">
           <h2>🔥 Top 10 Movies Today</h2>
@@ -117,7 +120,6 @@
         <div class="top10-scroll" id="top10-movies"></div>
       </div>
 
-      <!-- TOP 10 TV -->
       <div class="row">
         <div class="row-header">
           <h2>📺 Top 10 TV Shows Today</h2>
@@ -126,7 +128,6 @@
         <div class="top10-scroll" id="top10-tv"></div>
       </div>
 
-      <!-- ONGOING TV SHOWS -->
       <div class="row">
         <div class="row-header">
           <h2>🔴 Ongoing TV Shows</h2>
@@ -135,7 +136,6 @@
         <div class="list horizontal-scroll" id="ongoing-tv-list"></div>
       </div>
 
-      <!-- COMPLETED TV SHOWS -->
       <div class="row">
         <div class="row-header">
           <h2>✅ Completed TV Shows</h2>
@@ -290,7 +290,7 @@
       <div class="results" id="search-results"></div>
     </div>
 
-    <!-- ===== DETAILS MODAL ===== -->
+    <!-- ===== DETAILS MODAL (may Cast + You May Also Like) ===== -->
     <div class="modal" id="modal">
       <div class="modal-content">
 
@@ -327,6 +327,19 @@
             </div>
 
             <p class="details-description" id="modal-description"></p>
+
+            <!-- CAST SECTION -->
+            <div class="cast-section" id="cast-section">
+              <h3 class="section-title">🎭 Cast</h3>
+              <div class="cast-scroll" id="cast-list"></div>
+            </div>
+
+            <!-- YOU MAY ALSO LIKE SECTION -->
+            <div class="similar-section" id="similar-section">
+              <h3 class="section-title">✨ You May Also Like</h3>
+              <div class="similar-grid" id="similar-list"></div>
+            </div>
+
           </div>
         </div>
 
@@ -347,15 +360,11 @@
 
   </div><!-- /#app-content -->
 
-  <!-- ===== BOTTOM NAVIGATION BAR (NASA LABAS NA NG app-content) ===== -->
+  <!-- ===== BOTTOM NAVIGATION BAR (WALANG SEARCH NA) ===== -->
   <div class="bottom-nav">
     <a class="bottom-nav-item active" onclick="goHome()">
       <i class="fa fa-home"></i>
       <span>Home</span>
-    </a>
-    <a class="bottom-nav-item" onclick="openSearchModal()">
-      <i class="fa fa-search"></i>
-      <span>Search</span>
     </a>
     <a class="bottom-nav-item" onclick="openMoviesPage()">
       <i class="fa fa-film"></i>
