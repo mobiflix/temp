@@ -666,6 +666,10 @@ function showDetails(item) {
 
   document.getElementById('modal').style.display = 'flex';
   document.body.style.overflow = 'hidden';
+
+  // I-scroll sa taas yung modal pagbukas
+  const modalEl = document.getElementById('modal');
+  if (modalEl) modalEl.scrollTop = 0;
 }
 
 // ===== BOOKMARK =====
@@ -761,15 +765,28 @@ function skipCountdown() {
 }
 
 function proceedToPlayer(embedURL) {
-  const modal = document.getElementById('countdown-modal');
-  modal.classList.remove('open');
+  const countdownModal = document.getElementById('countdown-modal');
+  countdownModal.classList.remove('open');
+
+  // === FIX: I-scroll sa taas yung modal bago mag-load ng player ===
+  const modalEl = document.getElementById('modal');
+  if (modalEl) {
+    modalEl.scrollTop = 0;
+  }
+  window.scrollTo({ top: 0, behavior: 'auto' });
 
   document.getElementById('modal-video').src = embedURL;
 
   document.getElementById('details-view').style.display = 'none';
   document.getElementById('player-view').style.display = 'block';
 
+  // === FIX: I-scroll ulit pagkatapos i-load yung player ===
   setTimeout(function() {
+    if (modalEl) {
+      modalEl.scrollTop = 0;
+    }
+    window.scrollTo({ top: 0, behavior: 'auto' });
+
     const wrapper = document.getElementById('player-wrapper');
     const isFullscreen = document.fullscreenElement || document.webkitFullscreenElement;
 
@@ -980,7 +997,7 @@ async function searchTMDB() {
   }, 300);
 }
 
-// ===== BOTTOM NAV (5 items na lang, walang Search) =====
+// ===== BOTTOM NAV (5 items, walang Search) =====
 function setActiveNav(name) {
   document.querySelectorAll('.bottom-nav-item').forEach(function(el) {
     el.classList.remove('active');
