@@ -612,7 +612,7 @@ function toggleAddToList() {
 }
 
 // ============================================================
-// PLAY NOW — BUBUKAS SA BAGONG TAB
+// PLAY NOW — BUBUKAS SA BAGONG TAB (with focus fix)
 // ============================================================
 
 function playNow() {
@@ -630,7 +630,18 @@ function playNow() {
   console.log('[MobiFlix Player] Opening in new tab:', embedURL);
 
   // Buksan sa bagong tab
-  window.open(embedURL, '_blank');
+  const newTab = window.open(embedURL, '_blank');
+
+  // IMPORTANT: I-focus pabalik ang current tab pagkatapos
+  // (pero hindi agad-agad, para hindi ma-cancel ang pag-open ng bagong tab)
+  if (newTab) {
+    // I-close ang details modal para malinis pagbalik
+    setTimeout(function() {
+      closeModalOnly();
+      // I-focus pabalik sa current window
+      window.focus();
+    }, 100);
+  }
 }
 
 // ============================================================
