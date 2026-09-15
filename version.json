@@ -1,5 +1,5 @@
 {
-  "version": "v18",
+  "version": "v19",
   "released": "2026-09-15",
-  "notes": "Bottom nav nasa labas na ng app-content - gagana na kahit bukas ang modal"
+  "notes": "Back button ng phone sa details modal - babalik na sa homepage"
 }
