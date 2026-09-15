@@ -1,5 +1,5 @@
 {
-  "version": "v16",
+  "version": "v17",
   "released": "2026-09-15",
-  "notes": "Play Now sa bagong tab - hindi na mag-blablack screen"
+  "notes": "Ibinalik lahat ng back buttons + focus fix pagkatapos ng new tab"
 }
