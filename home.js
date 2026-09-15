@@ -68,10 +68,9 @@ const GENRE_LIST = [
 
 let currentItem;
 let bannerItem;
-let currentView = 'details';
 
-// ===== HISTORY STATE TRACKING =====
-let historyStateStack = [];
+// ===== HISTORY STACK (para sa back button) =====
+let historyStack = [];
 
 let viewAllState = { key: null, page: 1, maxPages: 500, loading: false, hasMore: true, initialized: false, seenIds: new Set() };
 let providerPageState = { providerId: null, providerName: '', providerType: 'provider', page: 1, maxPages: 500, loading: false, hasMore: true, initialized: false, seenIds: new Set() };
@@ -277,50 +276,50 @@ function renderGenresInMore() {
 }
 
 // ============================================================
-// ===== HISTORY / BACK BUTTON MANAGEMENT =====
+// ===== HISTORY MANAGEMENT (FIXED) =====
 // ============================================================
 
-// Magdagdag ng history state (para ma-capture ang back button)
-function pushHistoryState(type) {
+function pushHistory(type) {
   history.pushState({ mobiflix: type, ts: Date.now() }, '');
-  historyStateStack.push(type);
+  historyStack.push(type);
 }
 
-// Alisin ang history state (kapag nagsara ng page/modal)
-function popHistoryState() {
-  if (historyStateStack.length > 0) {
-    historyStateStack.pop();
-    // Gamitin ang history.back() para alisin ang entry
+// Isara base sa history stack — HINDI nagpupush, puro close lang
+function handleBackNavigation() {
+  if (historyStack.length === 0) return false;
+
+  const last = historyStack.pop();
+
+  if (last === 'player') {
+    closePlayerInternal();
+    return true;
+  } else if (last === 'modal') {
+    closeModalInternal();
+    return true;
+  } else if (last === 'page') {
+    closeTopPageInternal();
+    return true;
+  }
+  return false;
+}
+
+// I-clear lahat ng history entries (para sa clean slate)
+function clearHistoryStack() {
+  while (historyStack.length > 0) {
+    historyStack.pop();
     history.back();
   }
+  // Reset para hindi mag-trigger ng popstate issues
+  setTimeout(function() {
+    history.replaceState({ mobiflix: 'home' }, '');
+  }, 50);
 }
 
-// I-handle ang back button ng phone
-window.addEventListener('popstate', function(e) {
-  // Kung may laman ang history stack, isara ang pinaka-bagong bukas
-  if (historyStateStack.length > 0) {
-    const last = historyStateStack[historyStateStack.length - 1];
-    historyStateStack.pop();
-
-    // Isara base sa type
-    if (last === 'player') {
-      closePlayerViewInternal();
-    } else if (last === 'modal') {
-      closeModalInternal();
-    } else if (last === 'page') {
-      closeAllPagesInternal();
-    }
-    return;
-  }
-
-  // Kung wala nang laman, hayaan na lang (normal back)
-});
-
 // ============================================================
-// ===== CLOSE FUNCTIONS (INTERNAL - WALANG HISTORY) =====
+// ===== INTERNAL CLOSE FUNCTIONS (WALANG HISTORY) =====
 // ============================================================
 
-function closePlayerViewInternal() {
+function closePlayerInternal() {
   // Lumabas sa fullscreen
   if (document.fullscreenElement || document.webkitFullscreenElement) {
     if (document.exitFullscreen) {
@@ -333,100 +332,97 @@ function closePlayerViewInternal() {
     }
   }
 
-  // I-clear ang iframe at ibalik ang details view
-  document.getElementById('modal-video').src = '';
-  document.getElementById('player-view').style.display = 'none';
-  document.getElementById('details-view').style.display = 'block';
+  const video = document.getElementById('modal-video');
+  if (video) {
+    video.src = 'about:blank'; // IMPORTANT: para hindi mag-black screen
+  }
+
+  const playerView = document.getElementById('player-view');
+  const detailsView = document.getElementById('details-view');
+  const modal = document.getElementById('modal');
+
+  if (playerView) playerView.style.display = 'none';
+
+  // Kung bukas pa ang modal, ipakita ang details; kung hindi, isara lahat
+  if (modal && modal.style.display === 'flex') {
+    if (detailsView) detailsView.style.display = 'block';
+  } else {
+    if (detailsView) detailsView.style.display = 'block';
+  }
 }
 
 function closeModalInternal() {
-  closePlayerViewInternal();
+  closePlayerInternal();
 
-  document.getElementById('modal').style.display = 'none';
-  document.getElementById('modal-video').src = '';
+  const modal = document.getElementById('modal');
+  const video = document.getElementById('modal-video');
+  const detailsView = document.getElementById('details-view');
+  const playerView = document.getElementById('player-view');
+
+  if (modal) modal.style.display = 'none';
+  if (video) video.src = 'about:blank';
+  if (detailsView) detailsView.style.display = 'block';
+  if (playerView) playerView.style.display = 'none';
+
   document.body.style.overflow = '';
-  document.getElementById('details-view').style.display = 'block';
-  document.getElementById('player-view').style.display = 'none';
 }
 
-function closeAllPagesInternal() {
-  // Isara lahat ng pages
-  const pagesToClose = [
+function closeTopPageInternal() {
+  // Hanapin kung anong page ang bukas at isara
+  const pageIds = [
     'view-all-page', 'provider-page', 'movies-page', 'series-page',
     'my-list-page', 'more-page', 'search-modal', 'genre-page',
     'ongoing-page', 'completed-page'
   ];
-  pagesToClose.forEach(function(id) {
-    const el = document.getElementById(id);
-    if (el) {
+
+  for (let i = pageIds.length - 1; i >= 0; i--) {
+    const el = document.getElementById(pageIds[i]);
+    if (el && el.classList.contains('open')) {
       el.classList.remove('open');
-      el.style.display = '';
+      el.scrollTop = 0;
+      setActiveNav('home');
+      return;
     }
-  });
-
-  // Isara rin ang modal kung bukas
-  document.getElementById('modal').style.display = 'none';
-  document.getElementById('modal-video').src = '';
-  document.getElementById('details-view').style.display = 'block';
-  document.getElementById('player-view').style.display = 'none';
-  document.body.style.overflow = '';
-
-  // I-clear ang history stack
-  historyStateStack = [];
-
-  setActiveNav('home');
+  }
 }
 
 // ============================================================
-// ===== CLOSE FUNCTIONS (USER-TRIGGERED - MAY HISTORY) =====
+// ===== USER-TRIGGERED CLOSE (may history back) =====
 // ============================================================
 
-function closeViewAll() {
-  popHistoryState();
-}
+function closeViewAll() { triggerBack(); }
+function closeGenrePage() { triggerBack(); }
+function closeOngoingPage() { triggerBack(); }
+function closeCompletedPage() { triggerBack(); }
+function closeProviderPage() { triggerBack(); }
+function closeMoviesPage() { triggerBack(); }
+function closeSeriesPage() { triggerBack(); }
+function closeMyListPage() { triggerBack(); }
+function closeMorePage() { triggerBack(); }
+function closeSearchModal() { triggerBack(); }
+function closeModal() { triggerBack(); }
 
-function closeGenrePage() {
-  popHistoryState();
-}
-
-function closeOngoingPage() {
-  popHistoryState();
-}
-
-function closeCompletedPage() {
-  popHistoryState();
-}
-
-function closeProviderPage() {
-  popHistoryState();
-}
-
-function closeMoviesPage() {
-  popHistoryState();
-}
-
-function closeSeriesPage() {
-  popHistoryState();
-}
-
-function closeMyListPage() {
-  popHistoryState();
-}
-
-function closeMorePage() {
-  popHistoryState();
-}
-
-function closeSearchModal() {
-  popHistoryState();
-}
-
-function closeModal() {
-  popHistoryState();
+// Mag-back sa history (para tumawag ng popstate)
+function triggerBack() {
+  if (historyStack.length > 0) {
+    history.back();
+  }
 }
 
 // ============================================================
-// ===== PAGE OPENERS (NAGDU-DAG NG HISTORY STATE) =====
+// ===== POPSTATE HANDLER (back button ng phone) =====
+// ============================================================
+
+window.addEventListener('popstate', function(e) {
+  // Kapag may laman ang history stack, isara ang pinaka-bagong bukas
+  if (historyStack.length > 0) {
+    handleBackNavigation();
+  }
+  // Kung wala, hayaan na (normal browser behavior)
+});
+
+// ============================================================
+// ===== PAGE OPENERS =====
 // ============================================================
 
 function openGenrePage(genre) {
@@ -437,13 +433,8 @@ function openGenrePage(genre) {
   page.scrollTop = 0;
 
   genrePageState = {
-    genre: genre,
-    page: 1,
-    maxPages: 500,
-    loading: false,
-    hasMore: true,
-    initialized: true,
-    seenIds: new Set()
+    genre: genre, page: 1, maxPages: 500, loading: false,
+    hasMore: true, initialized: true, seenIds: new Set()
   };
 
   document.getElementById('genre-page-title').textContent = `${genre.icon} ${genre.name}`;
@@ -455,7 +446,7 @@ function openGenrePage(genre) {
   page.addEventListener('scroll', genrePageScrollHandler, { passive: true });
 
   setActiveNav('more');
-  pushHistoryState('page');
+  pushHistory('page');
   loadGenrePageBatch();
 }
 
@@ -527,7 +518,7 @@ function openOngoingPage() {
   page.addEventListener('scroll', ongoingPageScrollHandler, { passive: true });
 
   setActiveNav('home');
-  pushHistoryState('page');
+  pushHistory('page');
   loadOngoingPageBatch();
 }
 
@@ -596,7 +587,7 @@ function openCompletedPage() {
   page.addEventListener('scroll', completedPageScrollHandler, { passive: true });
 
   setActiveNav('home');
-  pushHistoryState('page');
+  pushHistory('page');
   loadCompletedPageBatch();
 }
 
@@ -656,15 +647,10 @@ function openProviderPage(providerId, providerName, providerType) {
   page.scrollTop = 0;
 
   providerPageState = {
-    providerId: providerId,
-    providerName: providerName,
+    providerId: providerId, providerName: providerName,
     providerType: providerType || 'provider',
-    page: 1,
-    maxPages: 500,
-    loading: false,
-    hasMore: true,
-    initialized: true,
-    seenIds: new Set()
+    page: 1, maxPages: 500, loading: false,
+    hasMore: true, initialized: true, seenIds: new Set()
   };
 
   document.getElementById('provider-page-title').textContent = '📡 ' + providerName;
@@ -675,7 +661,7 @@ function openProviderPage(providerId, providerName, providerType) {
   page.removeEventListener('scroll', providerPageScrollHandler);
   page.addEventListener('scroll', providerPageScrollHandler, { passive: true });
 
-  pushHistoryState('page');
+  pushHistory('page');
   loadProviderBatch();
 }
 
@@ -735,7 +721,6 @@ async function loadProviderBatch() {
 // ===== SHOW DETAILS =====
 function showDetails(item) {
   currentItem = item;
-  currentView = 'details';
 
   document.getElementById('modal-poster').src = `${IMG_URL}${item.backdrop_path || item.poster_path}`;
   document.getElementById('modal-title').textContent = item.title || item.name;
@@ -762,11 +747,15 @@ function showDetails(item) {
   document.getElementById('details-view').style.display = 'block';
   document.getElementById('player-view').style.display = 'none';
 
+  // I-reset ang video src
+  const video = document.getElementById('modal-video');
+  if (video) video.src = 'about:blank';
+
   document.getElementById('modal').style.display = 'flex';
   document.body.style.overflow = 'hidden';
 
-  // Magdagdag ng history state para sa modal
-  pushHistoryState('modal');
+  // Magdagdag ng history para sa modal
+  pushHistory('modal');
 }
 
 // ===== BOOKMARK =====
@@ -828,13 +817,14 @@ function playNow() {
 
   console.log('[MobiFlix Player]', embedURL);
 
-  document.getElementById('modal-video').src = embedURL;
+  const video = document.getElementById('modal-video');
+  video.src = embedURL;
 
   document.getElementById('details-view').style.display = 'none';
   document.getElementById('player-view').style.display = 'block';
 
-  // Magdagdag ng history state para sa player
-  pushHistoryState('player');
+  // Magdagdag ng history para sa player
+  pushHistory('player');
 
   // I-fullscreen ang player wrapper
   setTimeout(function() {
@@ -858,7 +848,7 @@ function playNow() {
   }, 300);
 }
 
-// ===== RESET ALL PAGES (WALANG HISTORY) =====
+// ===== RESET ALL PAGES (SILENT - WALANG HISTORY) =====
 function resetAllPagesSilent() {
   const pagesToClose = [
     'view-all-page', 'provider-page', 'movies-page', 'series-page',
@@ -882,7 +872,7 @@ function resetAllPagesSilent() {
   if (playerView) playerView.style.display = 'none';
 
   const video = document.getElementById('modal-video');
-  if (video) video.src = '';
+  if (video) video.src = 'about:blank';
 
   document.body.style.overflow = '';
 }
@@ -895,7 +885,7 @@ function openMyListPage() {
   page.scrollTop = 0;
   renderMyList();
   setActiveNav('mylist');
-  pushHistoryState('page');
+  pushHistory('page');
 }
 
 function renderMyList() {
@@ -946,7 +936,7 @@ function openSearchModal() {
   modal.scrollTop = 0;
   document.body.style.overflow = 'hidden';
   setActiveNav('search');
-  pushHistoryState('page');
+  pushHistory('page');
   setTimeout(function() {
     document.getElementById('search-input').focus();
   }, 200);
@@ -976,8 +966,9 @@ async function searchTMDB() {
       img.src = `${IMG_W500}${item.poster_path}`;
       img.alt = item.title || item.name;
       img.onclick = function() {
-        popHistoryState(); // isara ang search
-        showDetails(item);
+        // Isara ang search modal bago mag-open ng details
+        closeSearchModal();
+        setTimeout(function() { showDetails(item); }, 100);
       };
       container.appendChild(img);
     });
@@ -995,18 +986,22 @@ function setActiveNav(name) {
 }
 
 function goHome() {
-  // Kung may bukas na page o modal, isara muna
-  if (historyStateStack.length > 0) {
-    // Isara lahat nang sabay
-    closeAllPagesInternal();
-    // Alisin lahat ng history states
-    for (let i = 0; i < historyStateStack.length; i++) {
+  // Kung may bukas na pages o modal, isara muna lahat
+  if (historyStack.length > 0) {
+    closeAllPagesAndModal();
+    // Alisin lahat ng history entries
+    for (let i = 0; i < historyStack.length; i++) {
       history.back();
     }
-    historyStateStack = [];
+    historyStack = [];
   }
   setActiveNav('home');
   window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function closeAllPagesAndModal() {
+  closeModalInternal();
+  closeTopPageInternal();
 }
 
 // ===== MOVIES PAGE =====
@@ -1026,7 +1021,7 @@ function openMoviesPage() {
   page.addEventListener('scroll', moviesPageScrollHandler, { passive: true });
 
   setActiveNav('movies');
-  pushHistoryState('page');
+  pushHistory('page');
   loadMoviesPageBatch();
 }
 
@@ -1098,7 +1093,7 @@ function openSeriesPage() {
   page.addEventListener('scroll', seriesPageScrollHandler, { passive: true });
 
   setActiveNav('series');
-  pushHistoryState('page');
+  pushHistory('page');
   loadSeriesPageBatch();
 }
 
@@ -1161,7 +1156,7 @@ function openMorePage() {
   page.scrollTop = 0;
   renderGenresInMore();
   setActiveNav('more');
-  pushHistoryState('page');
+  pushHistory('page');
 }
 
 // ===== VIEW ALL PAGE =====
@@ -1186,7 +1181,7 @@ function openViewAll(key) {
   page.removeEventListener('scroll', viewAllScrollHandler);
   page.addEventListener('scroll', viewAllScrollHandler, { passive: true });
 
-  pushHistoryState('page');
+  pushHistory('page');
   loadViewAllBatch();
 }
 
@@ -1256,8 +1251,9 @@ async function init() {
   try {
     console.log('[MobiFlix] Initializing...');
 
-    // I-replace ang kasalukuyang history entry
+    // Reset history state
     history.replaceState({ mobiflix: 'home' }, '');
+    historyStack = [];
 
     renderProviders();
 
@@ -1293,9 +1289,8 @@ init();
 // ===== KEYBOARD =====
 document.addEventListener('keydown', function(e) {
   if (e.key === 'Escape') {
-    // Kung may laman ang history stack, isara ang pinaka-bagong
-    if (historyStateStack.length > 0) {
-      popHistoryState();
+    if (historyStack.length > 0) {
+      history.back();
     }
   }
 });
