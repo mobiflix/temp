@@ -863,3 +863,36 @@ body.locked { overflow: hidden; }
   .login-logo { font-size: 26px; }
   .login-box h2 { font-size: 20px; }
 }
+/* ===== BACK BUTTONS (IBINALIK) ===== */
+.back-btn {
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.1);
+  color: #fff;
+  padding: 10px 22px;
+  border-radius: 60px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.back-btn:hover { background: #e50914; border-color: #e50914; }
+
+.modal-back-bar { position: absolute; top: 12px; left: 16px; z-index: 10; }
+.modal-back-btn {
+  background: rgba(0,0,0,0.7);
+  border: 1px solid rgba(255,255,255,0.1);
+  color: #fff; padding: 8px 18px;
+  border-radius: 60px; font-size: 14px;
+  font-weight: 500; cursor: pointer;
+  transition: 0.2s; display: flex;
+  align-items: center; gap: 8px;
+  backdrop-filter: blur(6px);
+}
+.modal-back-btn:hover { background: #e50914; border-color: #e50914; }
+
+@media (max-width: 768px) {
+  .modal-back-btn { padding: 6px 14px; font-size: 13px; }
+}
