@@ -2,6 +2,7 @@ const API_KEY = 'e0a7266a5d0e95c36475f349d8bc0a5a';
 const BASE_URL = 'https://api.themoviedb.org/3';
 const IMG_URL = 'https://image.tmdb.org/t/p/original';
 const IMG_W500 = 'https://image.tmdb.org/t/p/w500';
+const IMG_PROFILE = 'https://image.tmdb.org/t/p/w185';
 
 const INDIAN_LANGS = ['hi', 'ta', 'te', 'ml', 'kn', 'bn', 'mr', 'pa', 'gu', 'or', 'as', 'ur', 'sa', 'ne', 'si'];
 
@@ -73,10 +74,9 @@ let ongoingPageState = {};
 let completedPageState = {};
 
 // ============================================================
-// POPSTATE HANDLER — Back button ng phone
+// POPSTATE HANDLER
 // ============================================================
 window.addEventListener('popstate', function(e) {
-  // Kung may bukas na modal, isara lang
   const modal = document.getElementById('modal');
   if (modal && modal.style.display === 'flex') {
     modal.style.display = 'none';
@@ -84,7 +84,6 @@ window.addEventListener('popstate', function(e) {
     return;
   }
 
-  // Kung may bukas na pages, isara
   const openPages = [
     'search-modal', 'more-page', 'my-list-page', 'series-page',
     'movies-page', 'provider-page', 'genre-page', 'ongoing-page',
@@ -146,6 +145,40 @@ async function fetchByProvider(providerId, mediaType, page) {
   const res = await fetch(url);
   const data = await res.json();
   return { results: data.results || [], total_pages: data.total_pages || 1 };
+}
+
+// ===== FETCH CREDITS (CAST) =====
+async function fetchCredits(mediaType, id) {
+  try {
+    const type = mediaType === 'tv' ? 'tv' : 'movie';
+    const res = await fetch(`${BASE_URL}/${type}/${id}/credits?api_key=${API_KEY}`);
+    const data = await res.json();
+    return (data.cast || []).slice(0, 15);
+  } catch (err) {
+    console.error('[Credits]', err);
+    return [];
+  }
+}
+
+// ===== FETCH SIMILAR / RECOMMENDATIONS =====
+async function fetchSimilar(mediaType, id) {
+  try {
+    const type = mediaType === 'tv' ? 'tv' : 'movie';
+    let res = await fetch(`${BASE_URL}/${type}/${id}/recommendations?api_key=${API_KEY}`);
+    let data = await res.json();
+
+    if (!data.results || data.results.length === 0) {
+      res = await fetch(`${BASE_URL}/${type}/${id}/similar?api_key=${API_KEY}`);
+      data = await res.json();
+    }
+
+    return filterNonIndian(data.results || []).filter(function(x) {
+      return x.poster_path;
+    }).slice(0, 9);
+  } catch (err) {
+    console.error('[Similar]', err);
+    return [];
+  }
 }
 
 function displayBanner(item) {
@@ -305,7 +338,6 @@ function closeMorePage() { closeAllPagesOnly(); setActiveNav('home'); }
 function closeSearchModal() { closeAllPagesOnly(); setActiveNav('home'); }
 
 function closeModal() {
-  // Kung may history entry para sa modal, i-trigger ang back
   if (history.state && history.state.mobiflixModal) {
     history.back();
   } else {
@@ -577,10 +609,10 @@ async function loadProviderBatch() {
 }
 
 // ============================================================
-// SHOW DETAILS
+// SHOW DETAILS (may Cast + You May Also Like)
 // ============================================================
 
-function showDetails(item) {
+async function showDetails(item) {
   currentItem = item;
 
   document.getElementById('modal-poster').src = `${IMG_URL}${item.backdrop_path || item.poster_path}`;
@@ -597,6 +629,8 @@ function showDetails(item) {
     const hours = Math.floor(item.runtime / 60);
     const mins = item.runtime % 60;
     runtimeEl.textContent = hours + 'H ' + mins + 'M';
+  } else if (item.number_of_seasons) {
+    runtimeEl.textContent = item.number_of_seasons + ' Season' + (item.number_of_seasons > 1 ? 's' : '');
   } else {
     runtimeEl.textContent = '—';
   }
@@ -608,8 +642,83 @@ function showDetails(item) {
   document.getElementById('modal').style.display = 'flex';
   document.body.style.overflow = 'hidden';
 
-  // Magdagdag ng history entry para sa modal
   history.pushState({ mobiflixModal: true }, '');
+
+  document.getElementById('cast-list').innerHTML = '<div style="color:#666;padding:10px 0;">Loading cast...</div>';
+  document.getElementById('similar-list').innerHTML = '<div style="color:#666;padding:10px 0;grid-column:1/-1;">Loading recommendations...</div>';
+
+  const mediaType = item.media_type || (item.title ? 'movie' : 'tv');
+  const itemId = item.id;
+
+  const [cast, similar] = await Promise.all([
+    fetchCredits(mediaType, itemId),
+    fetchSimilar(mediaType, itemId)
+  ]);
+
+  if (currentItem && currentItem.id !== itemId) return;
+
+  renderCast(cast);
+  renderSimilar(similar, mediaType);
+}
+
+function renderCast(cast) {
+  const container = document.getElementById('cast-list');
+  container.innerHTML = '';
+
+  if (!cast || cast.length === 0) {
+    container.innerHTML = '<div style="color:#666;padding:10px 0;">No cast information available.</div>';
+    return;
+  }
+
+  cast.forEach(function(person) {
+    const card = document.createElement('div');
+    card.className = 'cast-card';
+
+    const img = document.createElement('img');
+    img.alt = person.name;
+    img.loading = 'lazy';
+    if (person.profile_path) {
+      img.src = `${IMG_PROFILE}${person.profile_path}`;
+    } else {
+      img.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="%23444"><circle cx="50" cy="40" r="20"/><ellipse cx="50" cy="90" rx="35" ry="30"/></svg>';
+    }
+
+    const name = document.createElement('div');
+    name.className = 'cast-name';
+    name.textContent = person.name;
+
+    const role = document.createElement('div');
+    role.className = 'cast-role';
+    role.textContent = person.character || '';
+
+    card.appendChild(img);
+    card.appendChild(name);
+    card.appendChild(role);
+    container.appendChild(card);
+  });
+}
+
+function renderSimilar(similar, mediaType) {
+  const container = document.getElementById('similar-list');
+  container.innerHTML = '';
+
+  if (!similar || similar.length === 0) {
+    container.innerHTML = '<div style="color:#666;padding:10px 0;grid-column:1/-1;">No recommendations available.</div>';
+    return;
+  }
+
+  similar.forEach(function(item) {
+    item.media_type = mediaType;
+    const img = document.createElement('img');
+    img.src = `${IMG_W500}${item.poster_path}`;
+    img.alt = item.title || item.name;
+    img.loading = 'lazy';
+    img.onclick = function() {
+      history.replaceState({ mobiflixModal: true }, '');
+      showDetails(item);
+    };
+    container.appendChild(img);
+  });
 }
 
 function getWatchlist() {
@@ -656,7 +765,7 @@ function toggleAddToList() {
 }
 
 // ============================================================
-// PLAY NOW — BUBUKAS SA BAGONG TAB
+// PLAY NOW — BUBUKAS SA BAGONG TAB (with orientation lock)
 // ============================================================
 
 function playNow() {
@@ -673,8 +782,15 @@ function playNow() {
 
   console.log('[MobiFlix Player] Opening in new tab:', embedURL);
 
-  // Buksan sa bagong tab
-  window.open(embedURL, '_blank');
+  if (screen.orientation && screen.orientation.lock) {
+    screen.orientation.lock('landscape').catch(function() {});
+  }
+
+  const newTab = window.open(embedURL, '_blank');
+
+  if (!newTab) {
+    console.log('[MobiFlix] Popup blocked');
+  }
 }
 
 // ============================================================
@@ -787,12 +903,11 @@ function setActiveNav(name) {
     el.classList.remove('active');
   });
   const items = document.querySelectorAll('.bottom-nav-item');
-  const map = { home: 0, search: 1, movies: 2, series: 3, mylist: 4, more: 5 };
+  const map = { home: 0, movies: 1, series: 2, mylist: 3, more: 4 };
   if (items[map[name]]) items[map[name]].classList.add('active');
 }
 
 function goHome() {
-  // Isara lahat nang walang history push
   const modal = document.getElementById('modal');
   if (modal) modal.style.display = 'none';
 
@@ -810,7 +925,6 @@ function goHome() {
   });
 
   document.body.style.overflow = '';
-
   setActiveNav('home');
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
