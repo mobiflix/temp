@@ -8,15 +8,15 @@
   <meta http-equiv="Expires" content="0">
   <title>MobiFlix</title>
 
-  <link rel="stylesheet" href="home.css?v=20">
-  <link rel="manifest" href="manifest.json?v=20">
+  <link rel="stylesheet" href="home.css?v=21">
+  <link rel="manifest" href="manifest.json?v=21">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-  <script defer src="auth.js?v=20"></script>
-  <script defer src="home.js?v=20"></script>
+  <script defer src="auth.js?v=21"></script>
+  <script defer src="home.js?v=21"></script>
 
   <script>
     (function() {
-      const CURRENT_VERSION = 'v20';
+      const CURRENT_VERSION = 'v21';
       const CHECK_INTERVAL = 60000;
 
       async function checkForUpdates() {
@@ -334,10 +334,10 @@
               <div class="cast-scroll" id="cast-list"></div>
             </div>
 
-            <!-- YOU MAY ALSO LIKE SECTION -->
+            <!-- YOU MAY ALSO LIKE SECTION (horizontal swipe) -->
             <div class="similar-section" id="similar-section">
               <h3 class="section-title">✨ You May Also Like</h3>
-              <div class="similar-grid" id="similar-list"></div>
+              <div class="similar-scroll" id="similar-list"></div>
             </div>
 
           </div>
@@ -360,7 +360,7 @@
 
   </div><!-- /#app-content -->
 
-  <!-- ===== BOTTOM NAVIGATION BAR (WALANG SEARCH NA) ===== -->
+  <!-- ===== BOTTOM NAVIGATION BAR ===== -->
   <div class="bottom-nav">
     <a class="bottom-nav-item active" onclick="goHome()">
       <i class="fa fa-home"></i>
