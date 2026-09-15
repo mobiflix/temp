@@ -25,6 +25,10 @@ const PROVIDER_LOGOS = {
   'Apple TV+': 'https://upload.wikimedia.org/wikipedia/commons/2/28/Apple_TV_Plus_Logo.svg'
 };
 
+// ===== ZXCSTREAM PLAYER URLS =====
+const ZXCSTREAM_MOVIE = 'https://zxcstream.icu/watch/movie/';
+const ZXCSTREAM_TV = 'https://zxcstream.icu/watch/tv/';
+
 // ===== GENRE MAP =====
 const GENRE_MAP = {
   movie: { name: 'Movies', type: 'trending', media: 'movie', icon: '🔥' },
@@ -64,6 +68,7 @@ const GENRE_LIST = [
 
 let currentItem;
 let bannerItem;
+let currentView = 'details';
 
 let viewAllState = { key: null, page: 1, maxPages: 500, loading: false, hasMore: true, initialized: false, seenIds: new Set() };
 let providerPageState = { providerId: null, providerName: '', providerType: 'provider', page: 1, maxPages: 500, loading: false, hasMore: true, initialized: false, seenIds: new Set() };
@@ -175,13 +180,8 @@ function displayBanner(item) {
   if (descEl) descEl.textContent = item.overview || 'No description available.';
 }
 
-// ===== PLAY BANNER -> SHOW DETAILS NA LANG =====
-function playBanner() {
-  if (bannerItem) showDetails(bannerItem);
-}
-function showBannerDetails() {
-  if (bannerItem) showDetails(bannerItem);
-}
+function playBanner() { if (bannerItem) showDetails(bannerItem); }
+function showBannerDetails() { if (bannerItem) showDetails(bannerItem); }
 
 // ===== APPEND TO LIST =====
 function appendToList(items, containerId) {
@@ -617,6 +617,7 @@ async function loadProviderBatch() {
 // ===== SHOW DETAILS =====
 function showDetails(item) {
   currentItem = item;
+  currentView = 'details';
 
   document.getElementById('modal-poster').src = `${IMG_URL}${item.backdrop_path || item.poster_path}`;
   document.getElementById('modal-title').textContent = item.title || item.name;
@@ -639,6 +640,9 @@ function showDetails(item) {
   document.getElementById('modal-description').textContent = item.overview || 'No description available.';
 
   updateBookmarkUI(item);
+
+  document.getElementById('details-view').style.display = 'block';
+  document.getElementById('player-view').style.display = 'none';
 
   document.getElementById('modal').style.display = 'flex';
   document.body.style.overflow = 'hidden';
@@ -688,10 +692,69 @@ function toggleAddToList() {
   updateBookmarkUI(currentItem);
 }
 
+// ===== PLAY NOW (ZXCSTREAM) =====
+function playNow() {
+  if (!currentItem) return;
+
+  // Determine kung movie o TV show
+  const isMovie = currentItem.media_type === 'movie' || (!currentItem.media_type && currentItem.title);
+
+  let embedURL;
+  if (isMovie) {
+    // MOVIE: https://zxcstream.icu/watch/movie/{id}
+    embedURL = ZXCSTREAM_MOVIE + currentItem.id;
+  } else {
+    // TV: https://zxcstream.icu/watch/tv/{id}
+    embedURL = ZXCSTREAM_TV + currentItem.id;
+  }
+
+  console.log('[MobiFlix Player]', embedURL);
+
+  document.getElementById('modal-video').src = embedURL;
+
+  document.getElementById('details-view').style.display = 'none';
+  document.getElementById('player-view').style.display = 'block';
+
+  // I-fullscreen ang player wrapper pagkatapos ng 300ms
+  setTimeout(function() {
+    const wrapper = document.getElementById('player-wrapper');
+    const isFullscreen = document.fullscreenElement || document.webkitFullscreenElement;
+
+    if (!isFullscreen) {
+      if (wrapper.requestFullscreen) {
+        wrapper.requestFullscreen().then(function() {
+          if (screen.orientation && screen.orientation.lock) {
+            screen.orientation.lock('landscape').catch(function() {});
+          }
+        }).catch(function() {});
+      } else if (wrapper.webkitRequestFullscreen) {
+        wrapper.webkitRequestFullscreen();
+        if (screen.orientation && screen.orientation.lock) {
+          screen.orientation.lock('landscape').catch(function() {});
+        }
+      }
+    }
+  }, 300);
+}
+
 // ===== CLOSE MODAL =====
 function closeModal() {
+  if (document.fullscreenElement || document.webkitFullscreenElement) {
+    if (document.exitFullscreen) {
+      document.exitFullscreen();
+    } else if (document.webkitExitFullscreen) {
+      document.webkitExitFullscreen();
+    }
+    if (screen.orientation && screen.orientation.unlock) {
+      screen.orientation.unlock();
+    }
+  }
+
   document.getElementById('modal').style.display = 'none';
+  document.getElementById('modal-video').src = '';
   document.body.style.overflow = '';
+  document.getElementById('details-view').style.display = 'block';
+  document.getElementById('player-view').style.display = 'none';
 }
 
 // ===== RESET ALL PAGES =====
@@ -711,6 +774,14 @@ function resetAllPages() {
 
   const modal = document.getElementById('modal');
   if (modal) modal.style.display = 'none';
+
+  const detailsView = document.getElementById('details-view');
+  const playerView = document.getElementById('player-view');
+  if (detailsView) detailsView.style.display = 'block';
+  if (playerView) playerView.style.display = 'none';
+
+  const video = document.getElementById('modal-video');
+  if (video) video.src = '';
 
   document.body.style.overflow = '';
 }
