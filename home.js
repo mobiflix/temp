@@ -25,22 +25,6 @@ const PROVIDER_LOGOS = {
   'Apple TV+': 'https://upload.wikimedia.org/wikipedia/commons/2/28/Apple_TV_Plus_Logo.svg'
 };
 
-// ===== ENDPOINTS =====
-const MOVIE_ENDPOINTS = [
-  { name: 'Zxcstream', url: 'https://zxcstream.icu/watch/movie/' },
-  { name: 'Vidstuck', url: 'https://vidstuck.xyz/embed/movie/' },
-  { name: 'VidLink', url: 'https://vidlink.pro/movie/' },
-  { name: '111Movies', url: 'https://111movies.com/movie/' },
-  { name: 'VidSrc.io', url: 'https://vidsrc.io/embed/movie/' },
-  { name: '2Embed', url: 'https://www.2embed.cc/embed/' }
-];
-
-const SERIES_ENDPOINTS = [
-  { name: 'Zxcstream', url: 'https://zxcstream.icu/watch/tv/' },
-  { name: 'Vidstuck', url: 'https://vidstuck.xyz/embed/tv/' },
-  { name: 'VidSrc.me', url: 'https://vidsrc.me/embed/tv/' }
-];
-
 // ===== GENRE MAP =====
 const GENRE_MAP = {
   movie: { name: 'Movies', type: 'trending', media: 'movie', icon: '🔥' },
@@ -80,11 +64,6 @@ const GENRE_LIST = [
 
 let currentItem;
 let bannerItem;
-let currentView = 'details';
-
-let pages = { movie: 1, tv: 1 };
-let loading = { movie: false, tv: false };
-let maxPages = { movie: 500, tv: 500 };
 
 let viewAllState = { key: null, page: 1, maxPages: 500, loading: false, hasMore: true, initialized: false, seenIds: new Set() };
 let providerPageState = { providerId: null, providerName: '', providerType: 'provider', page: 1, maxPages: 500, loading: false, hasMore: true, initialized: false, seenIds: new Set() };
@@ -117,7 +96,6 @@ async function fetchTopRated(type, page) {
 }
 
 // ===== FETCH: ONGOING TV SHOWS =====
-// Status 0 = Returning Series, 1 = Planned
 async function fetchOngoingTV(page) {
   const today = new Date().toISOString().split('T')[0];
   const url = `${BASE_URL}/discover/tv?api_key=${API_KEY}` +
@@ -133,7 +111,6 @@ async function fetchOngoingTV(page) {
 }
 
 // ===== FETCH: COMPLETED TV SHOWS =====
-// Status 3 = Ended, 4 = Cancelled
 async function fetchCompletedTV(page) {
   const url = `${BASE_URL}/discover/tv?api_key=${API_KEY}` +
     `&sort_by=popularity.desc` +
@@ -198,8 +175,13 @@ function displayBanner(item) {
   if (descEl) descEl.textContent = item.overview || 'No description available.';
 }
 
-function playBanner() { if (bannerItem) showDetails(bannerItem); }
-function showBannerDetails() { if (bannerItem) showDetails(bannerItem); }
+// ===== PLAY BANNER -> SHOW DETAILS NA LANG =====
+function playBanner() {
+  if (bannerItem) showDetails(bannerItem);
+}
+function showBannerDetails() {
+  if (bannerItem) showDetails(bannerItem);
+}
 
 // ===== APPEND TO LIST =====
 function appendToList(items, containerId) {
@@ -282,7 +264,7 @@ function renderProviders() {
   });
 }
 
-// ===== GENRES RENDER (para sa More page) =====
+// ===== GENRES RENDER =====
 function renderGenresInMore() {
   const container = document.getElementById('more-genres-list');
   if (!container) return;
@@ -635,7 +617,6 @@ async function loadProviderBatch() {
 // ===== SHOW DETAILS =====
 function showDetails(item) {
   currentItem = item;
-  currentView = 'details';
 
   document.getElementById('modal-poster').src = `${IMG_URL}${item.backdrop_path || item.poster_path}`;
   document.getElementById('modal-title').textContent = item.title || item.name;
@@ -658,9 +639,6 @@ function showDetails(item) {
   document.getElementById('modal-description').textContent = item.overview || 'No description available.';
 
   updateBookmarkUI(item);
-
-  document.getElementById('details-view').style.display = 'block';
-  document.getElementById('player-view').style.display = 'none';
 
   document.getElementById('modal').style.display = 'flex';
   document.body.style.overflow = 'hidden';
@@ -710,60 +688,10 @@ function toggleAddToList() {
   updateBookmarkUI(currentItem);
 }
 
-// ===== PLAY NOW =====
-function playNow() {
-  if (!currentItem) return;
-
-  const isMovie = currentItem.media_type === 'movie' || (!currentItem.media_type && currentItem.title);
-  const endpoints = isMovie ? MOVIE_ENDPOINTS : SERIES_ENDPOINTS;
-  const endpoint = endpoints[0];
-  if (!endpoint) return;
-
-  const embedURL = endpoint.url + currentItem.id;
-  document.getElementById('modal-video').src = embedURL;
-
-  document.getElementById('details-view').style.display = 'none';
-  document.getElementById('player-view').style.display = 'block';
-
-  setTimeout(function() {
-    const wrapper = document.getElementById('player-wrapper');
-    const isFullscreen = document.fullscreenElement || document.webkitFullscreenElement;
-
-    if (!isFullscreen) {
-      if (wrapper.requestFullscreen) {
-        wrapper.requestFullscreen().then(function() {
-          if (screen.orientation && screen.orientation.lock) {
-            screen.orientation.lock('portrait').catch(function() {});
-          }
-        }).catch(function() {});
-      } else if (wrapper.webkitRequestFullscreen) {
-        wrapper.webkitRequestFullscreen();
-        if (screen.orientation && screen.orientation.lock) {
-          screen.orientation.lock('portrait').catch(function() {});
-        }
-      }
-    }
-  }, 300);
-}
-
 // ===== CLOSE MODAL =====
 function closeModal() {
-  if (document.fullscreenElement || document.webkitFullscreenElement) {
-    if (document.exitFullscreen) {
-      document.exitFullscreen();
-    } else if (document.webkitExitFullscreen) {
-      document.webkitExitFullscreen();
-    }
-    if (screen.orientation && screen.orientation.unlock) {
-      screen.orientation.unlock();
-    }
-  }
-
   document.getElementById('modal').style.display = 'none';
-  document.getElementById('modal-video').src = '';
   document.body.style.overflow = '';
-  document.getElementById('details-view').style.display = 'block';
-  document.getElementById('player-view').style.display = 'none';
 }
 
 // ===== RESET ALL PAGES =====
@@ -783,14 +711,6 @@ function resetAllPages() {
 
   const modal = document.getElementById('modal');
   if (modal) modal.style.display = 'none';
-
-  const detailsView = document.getElementById('details-view');
-  const playerView = document.getElementById('player-view');
-  if (detailsView) detailsView.style.display = 'block';
-  if (playerView) playerView.style.display = 'none';
-
-  const video = document.getElementById('modal-video');
-  if (video) video.src = '';
 
   document.body.style.overflow = '';
 }
@@ -1197,7 +1117,6 @@ async function init() {
 
     renderProviders();
 
-    // Load all homepage sections in parallel
     const [moviesData, tvData, ongoingData, completedData] = await Promise.all([
       fetchTrending('movie', 1),
       fetchTrending('tv', 1),
@@ -1213,11 +1132,9 @@ async function init() {
     renderTop10(moviesData.results, 'top10-movies');
     renderTop10(tvData.results, 'top10-tv');
 
-    // Ongoing TV Shows
     ongoingData.results.forEach(function(item) { item.media_type = 'tv'; });
     appendToList(ongoingData.results, 'ongoing-tv-list');
 
-    // Completed TV Shows
     completedData.results.forEach(function(item) { item.media_type = 'tv'; });
     appendToList(completedData.results, 'completed-tv-list');
 
