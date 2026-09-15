@@ -1,5 +1,5 @@
 {
-  "version": "v12",
+  "version": "v13",
   "released": "2026-09-15",
-  "notes": "Ayos na ang black screen kapag nagpalit ng movie/TV show"
+  "notes": "Hash-based back button - hindi na nag-blablack screen"
 }
