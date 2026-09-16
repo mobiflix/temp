@@ -8,15 +8,15 @@
   <meta http-equiv="Expires" content="0">
   <title>MobiFlix</title>
 
-  <link rel="stylesheet" href="home.css?v=29">
-  <link rel="manifest" href="manifest.json?v=29">
+  <link rel="stylesheet" href="home.css?v=31">
+  <link rel="manifest" href="manifest.json?v=31">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-  <script defer src="auth.js?v=29"></script>
-  <script defer src="home.js?v=29"></script>
+  <script defer src="auth.js?v=31"></script>
+  <script defer src="home.js?v=31"></script>
 
   <script>
     (function() {
-      const CURRENT_VERSION = 'v29';
+      const CURRENT_VERSION = 'v31';
       const CHECK_INTERVAL = 60000;
 
       async function checkForUpdates() {
@@ -802,6 +802,9 @@
               <button class="btn-play-now" onclick="playNow()">
                 <i class="fa fa-play"></i> Play Now
               </button>
+              <button class="btn-trailer" onclick="playTrailer()" id="btn-trailer" style="display:none;">
+                <i class="fa fa-film"></i> Trailer
+              </button>
               <button class="btn-add-list" onclick="toggleAddToList()">
                 <i class="fa fa-bookmark" id="bookmark-icon"></i> <span id="bookmark-text">Add to List</span>
               </button>
@@ -828,6 +831,18 @@
           </div>
         </div>
 
+      </div>
+    </div>
+
+    <!-- ===== TRAILER MODAL ===== -->
+    <div class="trailer-modal" id="trailer-modal">
+      <div class="trailer-content">
+        <button class="trailer-close-btn" onclick="closeTrailer()">
+          <i class="fa fa-times"></i>
+        </button>
+        <div class="trailer-wrapper">
+          <iframe id="trailer-iframe" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+        </div>
       </div>
     </div>
 
