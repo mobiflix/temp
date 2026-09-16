@@ -497,6 +497,12 @@ async function generateNotifications() {
 
 function openNotifications() {
   const panel = document.getElementById('notif-panel');
+
+  if (panel.classList.contains('open')) {
+    closeNotifications();
+    return;
+  }
+
   panel.classList.add('open');
   renderNotifications();
 
@@ -509,6 +515,19 @@ function openNotifications() {
 function closeNotifications() {
   document.getElementById('notif-panel').classList.remove('open');
 }
+
+// I-close ang notification panel kapag nag-click sa labas
+document.addEventListener('click', function(e) {
+  const panel = document.getElementById('notif-panel');
+  const notifBtn = e.target.closest('button[aria-label="Notifications"]');
+
+  if (!panel) return;
+  if (!panel.classList.contains('open')) return;
+  if (panel.contains(e.target)) return;
+  if (notifBtn) return;
+
+  closeNotifications();
+});
 
 function renderNotifications() {
   const list = getNotifications();
@@ -896,6 +915,13 @@ function getFilterValues(pageKey) {
 function applyFilters(pageKey) {
   const filters = getFilterValues(pageKey);
 
+  const hasFilters = filters.year || filters.rating || filters.genre;
+
+  if (!hasFilters) {
+    alert('Please select at least one filter.');
+    return;
+  }
+
   if (pageKey === 'view-all') {
     viewAllState.filters = filters;
     viewAllState.page = 1;
@@ -922,7 +948,21 @@ function clearFilters(pageKey) {
   document.getElementById(prefix + 'rating').value = '';
   document.getElementById(prefix + 'genre').value = '';
 
-  applyFilters(pageKey);
+  if (pageKey === 'view-all') {
+    viewAllState.filters = {};
+    viewAllState.page = 1;
+    viewAllState.seenIds = new Set();
+    document.getElementById('view-all-grid').innerHTML = '';
+    document.getElementById('view-all-end').style.display = 'none';
+    loadViewAllBatch();
+  } else if (pageKey === 'movies') {
+    moviesPageState.filters = {};
+    moviesPageState.page = 1;
+    moviesPageState.seenIds = new Set();
+    document.getElementById('movies-page-grid').innerHTML = '';
+    document.getElementById('movies-page-end').style.display = 'none';
+    loadMoviesPageBatch();
+  }
 }
 
 function buildFilterParams(filters, mediaType) {
@@ -1712,8 +1752,9 @@ async function loadMoviesPageBatch() {
   try {
     let data;
     const filters = moviesPageState.filters || {};
+    const hasFilters = filters.year || filters.rating || filters.genre;
 
-    if (filters.year || filters.rating || filters.genre) {
+    if (hasFilters) {
       const filterParams = buildFilterParams(filters, 'movie');
       const url = `${BASE_URL}/discover/movie?api_key=${API_KEY}${filterParams}&sort_by=popularity.desc&page=${moviesPageState.page}&without_original_language=${INDIAN_LANGS.join('|')}`;
       const res = await fetch(url);
@@ -1878,8 +1919,9 @@ async function loadViewAllBatch() {
   try {
     let data;
     const filters = viewAllState.filters || {};
+    const hasFilters = filters.year || filters.rating || filters.genre;
 
-    if (filters.year || filters.rating || filters.genre) {
+    if (hasFilters) {
       const filterParams = buildFilterParams(filters, genre.media);
       const url = `${BASE_URL}/discover/${genre.media}?api_key=${API_KEY}${filterParams}&sort_by=popularity.desc&page=${viewAllState.page}&without_original_language=${INDIAN_LANGS.join('|')}`;
       const res = await fetch(url);
