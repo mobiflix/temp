@@ -13,6 +13,7 @@ const THEME_KEY = 'mobiflix_theme';
 const NOTIF_KEY = 'mobiflix_notifications';
 const NOTIF_ENABLED_KEY = 'mobiflix_notif_enabled';
 const CONTINUE_KEY = 'mobiflix_continue_watching';
+const EPISODE_PROGRESS_KEY = 'mobiflix_episode_progress';
 const MAX_HISTORY = 30;
 const MAX_CONTINUE = 10;
 
@@ -77,6 +78,7 @@ const GENRE_LIST = [
 let currentItem;
 let bannerItem;
 let currentTvId = null;
+let currentTrailerKey = null;
 
 let viewAllState = { key: null, page: 1, maxPages: 500, loading: false, hasMore: true, initialized: false, seenIds: new Set(), filters: {} };
 let vivamaxPageState = { page: 1, maxPages: 500, loading: false, hasMore: true, initialized: false, seenIds: new Set(), filters: {} };
@@ -203,6 +205,71 @@ async function fetchSimilar(mediaType, id) {
     console.error('[Similar]', err);
     return [];
   }
+}
+
+// ============================================================
+// TRAILER
+// ============================================================
+
+async function fetchTrailer(mediaType, id) {
+  try {
+    const type = mediaType === 'tv' ? 'tv' : 'movie';
+    const res = await fetch(`${BASE_URL}/${type}/${id}/videos?api_key=${API_KEY}`);
+    const data = await res.json();
+    const videos = data.results || [];
+    const trailer = videos.find(function(v) {
+      return v.type === 'Trailer' && v.site === 'YouTube';
+    }) || videos.find(function(v) {
+      return v.site === 'YouTube';
+    });
+    return trailer ? trailer.key : null;
+  } catch (err) {
+    console.error('[Trailer]', err);
+    return null;
+  }
+}
+
+function playTrailer() {
+  if (!currentTrailerKey) return;
+  const modal = document.getElementById('trailer-modal');
+  const iframe = document.getElementById('trailer-iframe');
+  iframe.src = `https://www.youtube.com/embed/${currentTrailerKey}?autoplay=1&rel=0`;
+  modal.classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeTrailer() {
+  const modal = document.getElementById('trailer-modal');
+  const iframe = document.getElementById('trailer-iframe');
+  iframe.src = '';
+  modal.classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+// ============================================================
+// EPISODE PROGRESS
+// ============================================================
+
+function getEpisodeProgress() {
+  try { return JSON.parse(localStorage.getItem(EPISODE_PROGRESS_KEY)) || {}; }
+  catch (e) { return {}; }
+}
+
+function saveEpisodeProgress(progress) {
+  localStorage.setItem(EPISODE_PROGRESS_KEY, JSON.stringify(progress));
+}
+
+function markEpisodeWatched(tvId, seasonNumber, episodeNumber) {
+  const progress = getEpisodeProgress();
+  const key = `${tvId}_s${seasonNumber}e${episodeNumber}`;
+  progress[key] = Date.now();
+  saveEpisodeProgress(progress);
+}
+
+function isEpisodeWatched(tvId, seasonNumber, episodeNumber) {
+  const progress = getEpisodeProgress();
+  const key = `${tvId}_s${seasonNumber}e${episodeNumber}`;
+  return !!progress[key];
 }
 
 // ============================================================
@@ -696,6 +763,9 @@ async function loadSeasonEpisodes(tvId, seasonNumber) {
   episodes.forEach(function(ep) {
     const episodeItem = document.createElement('div');
     episodeItem.className = 'episode-item';
+    if (isEpisodeWatched(tvId, seasonNumber, ep.episode_number)) {
+      episodeItem.classList.add('watched');
+    }
     episodeItem.onclick = function() {
       playEpisode(tvId, seasonNumber, ep.episode_number);
     };
@@ -754,6 +824,14 @@ async function loadSeasonEpisodes(tvId, seasonNumber) {
 function playEpisode(tvId, seasonNumber, episodeNumber) {
   const url = `${ZXCSTREAM_TV}${tvId}/${seasonNumber}/${episodeNumber}`;
   console.log('[MobiFlix Episode]', url);
+
+  // Mark as watched
+  markEpisodeWatched(tvId, seasonNumber, episodeNumber);
+
+  // Update the UI
+  setTimeout(function() {
+    loadSeasonEpisodes(tvId, seasonNumber);
+  }, 500);
 
   if (screen.orientation && screen.orientation.lock) {
     screen.orientation.lock('landscape').catch(function() {});
@@ -1540,9 +1618,15 @@ async function showDetails(item) {
   const mediaType = item.media_type || (item.title ? 'movie' : 'tv');
   const itemId = item.id;
 
+  // Hide trailer button initially
+  const trailerBtn = document.getElementById('btn-trailer');
+  if (trailerBtn) trailerBtn.style.display = 'none';
+  currentTrailerKey = null;
+
   const promises = [
     fetchCredits(mediaType, itemId),
-    fetchSimilar(mediaType, itemId)
+    fetchSimilar(mediaType, itemId),
+    fetchTrailer(mediaType, itemId)
   ];
 
   if (mediaType === 'tv') {
@@ -1551,12 +1635,18 @@ async function showDetails(item) {
     document.getElementById('episodes-section').style.display = 'none';
   }
 
-  const [cast, similar] = await Promise.all(promises);
+  const [cast, similar, trailerKey] = await Promise.all(promises);
 
   if (currentItem && currentItem.id !== itemId) return;
 
   renderCast(cast);
   renderSimilar(similar, mediaType);
+
+  // Show trailer button if available
+  if (trailerKey) {
+    currentTrailerKey = trailerKey;
+    if (trailerBtn) trailerBtn.style.display = 'flex';
+  }
 
   renderContinueWatching();
 }
@@ -2187,6 +2277,12 @@ init();
 
 document.addEventListener('keydown', function(e) {
   if (e.key === 'Escape') {
+    const trailerModal = document.getElementById('trailer-modal');
+    if (trailerModal && trailerModal.classList.contains('open')) {
+      closeTrailer();
+      return;
+    }
+
     const modal = document.getElementById('modal');
     if (modal && modal.style.display === 'flex') {
       if (history.state && history.state.mobiflixModal) {
