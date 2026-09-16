@@ -4,6 +4,9 @@ const IMG_URL = 'https://image.tmdb.org/t/p/original';
 const IMG_W500 = 'https://image.tmdb.org/t/p/w500';
 const IMG_PROFILE = 'https://image.tmdb.org/t/p/w185';
 
+// ===== VIVAMAX COMPANY ID =====
+const VIVAMAX_COMPANY_ID = '149142';
+
 const INDIAN_LANGS = ['hi', 'ta', 'te', 'ml', 'kn', 'bn', 'mr', 'pa', 'gu', 'or', 'as', 'ur', 'sa', 'ne', 'si'];
 
 const STREAMING_PROVIDERS = [
@@ -66,6 +69,7 @@ let currentItem;
 let bannerItem;
 
 let viewAllState = { key: null, page: 1, maxPages: 500, loading: false, hasMore: true, initialized: false, seenIds: new Set() };
+let vivamaxPageState = { page: 1, maxPages: 500, loading: false, hasMore: true, initialized: false, seenIds: new Set() };
 let providerPageState = { providerId: null, providerName: '', providerType: 'provider', page: 1, maxPages: 500, loading: false, hasMore: true, initialized: false, seenIds: new Set() };
 let moviesPageState = { page: 1, maxPages: 500, loading: false, hasMore: true, initialized: false, seenIds: new Set() };
 let seriesPageState = { page: 1, maxPages: 500, loading: false, hasMore: true, initialized: false, seenIds: new Set() };
@@ -88,7 +92,7 @@ window.addEventListener('popstate', function(e) {
   const openPages = [
     'search-modal', 'more-page', 'my-list-page', 'series-page',
     'movies-page', 'provider-page', 'genre-page', 'ongoing-page',
-    'completed-page', 'view-all-page'
+    'completed-page', 'vivamax-page', 'view-all-page'
   ];
   for (let i = 0; i < openPages.length; i++) {
     const el = document.getElementById(openPages[i]);
@@ -146,6 +150,23 @@ async function fetchByProvider(providerId, mediaType, page) {
   const res = await fetch(url);
   const data = await res.json();
   return { results: data.results || [], total_pages: data.total_pages || 1 };
+}
+
+// ===== FETCH VIVAMAX MOVIES (Company ID approach) =====
+async function fetchVivamaxMovies(page) {
+  const url = `${BASE_URL}/discover/movie?api_key=${API_KEY}` +
+    `&with_companies=${VIVAMAX_COMPANY_ID}` +
+    `&sort_by=primary_release_date.desc` +
+    `&include_adult=true` +
+    `&page=${page}`;
+
+  const res = await fetch(url);
+  const data = await res.json();
+
+  return {
+    results: data.results || [],
+    total_pages: data.total_pages || 1
+  };
 }
 
 // ===== FETCH CREDITS (CAST) =====
@@ -310,7 +331,7 @@ function closeAllPagesOnly() {
   const pagesToClose = [
     'view-all-page', 'provider-page', 'movies-page', 'series-page',
     'my-list-page', 'more-page', 'search-modal', 'genre-page',
-    'ongoing-page', 'completed-page'
+    'ongoing-page', 'completed-page', 'vivamax-page'
   ];
   pagesToClose.forEach(function(id) {
     const el = document.getElementById(id);
@@ -329,6 +350,7 @@ function closeModalOnly() {
 }
 
 function closeViewAll() { closeAllPagesOnly(); setActiveNav('home'); }
+function closeVivamaxPage() { closeAllPagesOnly(); setActiveNav('home'); }
 function closeGenrePage() { closeAllPagesOnly(); setActiveNav('more'); }
 function closeOngoingPage() { closeAllPagesOnly(); setActiveNav('home'); }
 function closeCompletedPage() { closeAllPagesOnly(); setActiveNav('home'); }
@@ -355,6 +377,68 @@ function closeModal() {
 // ============================================================
 // PAGE OPENERS
 // ============================================================
+
+function openVivamaxPage() {
+  closeAllPagesOnly();
+  const page = document.getElementById('vivamax-page');
+  page.classList.add('open');
+  page.scrollTop = 0;
+
+  vivamaxPageState = { page: 1, maxPages: 500, loading: false, hasMore: true, initialized: true, seenIds: new Set() };
+
+  document.getElementById('vivamax-page-grid').innerHTML = '';
+  document.getElementById('vivamax-page-end').style.display = 'none';
+  document.getElementById('vivamax-page-loading').style.display = 'none';
+
+  page.removeEventListener('scroll', vivamaxPageScrollHandler);
+  page.addEventListener('scroll', vivamaxPageScrollHandler, { passive: true });
+
+  setActiveNav('home');
+  loadVivamaxBatch();
+}
+
+function vivamaxPageScrollHandler() {
+  if (!vivamaxPageState.initialized || vivamaxPageState.loading || !vivamaxPageState.hasMore) return;
+  const page = document.getElementById('vivamax-page');
+  if (!page) return;
+  if (page.scrollTop + page.clientHeight >= page.scrollHeight - 300) loadVivamaxBatch();
+}
+
+async function loadVivamaxBatch() {
+  if (vivamaxPageState.loading || !vivamaxPageState.hasMore) return;
+  vivamaxPageState.loading = true;
+  document.getElementById('vivamax-page-loading').style.display = 'block';
+
+  try {
+    const data = await fetchVivamaxMovies(vivamaxPageState.page);
+    vivamaxPageState.maxPages = data.total_pages;
+    vivamaxPageState.page += 1;
+
+    const grid = document.getElementById('vivamax-page-grid');
+    data.results.forEach(function(item) {
+      if (!item.poster_path) return;
+      if (vivamaxPageState.seenIds.has(item.id)) return;
+      vivamaxPageState.seenIds.add(item.id);
+      item.media_type = 'movie';
+      const img = document.createElement('img');
+      img.src = `${IMG_W500}${item.poster_path}`;
+      img.alt = item.title || item.name;
+      img.loading = 'lazy';
+      img.dataset.id = item.id;
+      img.onclick = function() { showDetails(item); };
+      grid.appendChild(img);
+    });
+
+    if (vivamaxPageState.page > vivamaxPageState.maxPages) {
+      vivamaxPageState.hasMore = false;
+      document.getElementById('vivamax-page-end').style.display = 'block';
+    }
+  } catch (err) { console.error(err); }
+  finally {
+    vivamaxPageState.loading = false;
+    document.getElementById('vivamax-page-loading').style.display = 'none';
+  }
+}
 
 function openGenrePage(genre) {
   closeAllPagesOnly();
@@ -853,7 +937,7 @@ async function fetchFullDetails(id, mediaType) {
 }
 
 // ============================================================
-// SEARCH — PINABUTI (region=PH, include_adult=true, separate movie+tv)
+// SEARCH — PINABUTI
 // ============================================================
 
 function openSearchModal() {
@@ -880,7 +964,6 @@ async function searchTMDB() {
 
   searchTimeout = setTimeout(async () => {
     try {
-      // Search movies AND TV shows separately para mas maraming results
       const [movieRes, tvRes] = await Promise.all([
         fetch(`${BASE_URL}/search/movie?api_key=${API_KEY}&query=${encodeURIComponent(query)}&include_adult=true&region=PH&language=en-US`),
         fetch(`${BASE_URL}/search/tv?api_key=${API_KEY}&query=${encodeURIComponent(query)}&include_adult=true&language=en-US`)
@@ -889,7 +972,6 @@ async function searchTMDB() {
       const movieData = await movieRes.json();
       const tvData = await tvRes.json();
 
-      // Combine and label media_type
       const movies = (movieData.results || []).map(function(m) {
         m.media_type = 'movie';
         return m;
@@ -899,7 +981,6 @@ async function searchTMDB() {
         return t;
       });
 
-      // Combine, filter, sort by popularity
       const combined = [...movies, ...tvs]
         .filter(function(item) {
           return item.poster_path && !INDIAN_LANGS.includes(item.original_language);
@@ -952,7 +1033,7 @@ function goHome() {
   const pagesToClose = [
     'view-all-page', 'provider-page', 'movies-page', 'series-page',
     'my-list-page', 'more-page', 'search-modal', 'genre-page',
-    'ongoing-page', 'completed-page'
+    'ongoing-page', 'completed-page', 'vivamax-page'
   ];
   pagesToClose.forEach(function(id) {
     const el = document.getElementById(id);
@@ -1215,11 +1296,13 @@ async function init() {
     console.log('[MobiFlix] Initializing...');
     renderProviders();
 
-    const [moviesData, tvData, ongoingData, completedData] = await Promise.all([
+    // Load all homepage sections in parallel (kasama Vivamax)
+    const [moviesData, tvData, ongoingData, completedData, vivamaxData] = await Promise.all([
       fetchTrending('movie', 1),
       fetchTrending('tv', 1),
       fetchOngoingTV(1),
-      fetchCompletedTV(1)
+      fetchCompletedTV(1),
+      fetchVivamaxMovies(1)
     ]);
 
     if (moviesData.results.length > 0) {
@@ -1230,13 +1313,17 @@ async function init() {
     renderTop10(moviesData.results, 'top10-movies');
     renderTop10(tvData.results, 'top10-tv');
 
+    // Vivamax Movies row
+    vivamaxData.results.forEach(function(item) { item.media_type = 'movie'; });
+    appendToList(vivamaxData.results, 'vivamax-list');
+
     ongoingData.results.forEach(function(item) { item.media_type = 'tv'; });
     appendToList(ongoingData.results, 'ongoing-tv-list');
 
     completedData.results.forEach(function(item) { item.media_type = 'tv'; });
     appendToList(completedData.results, 'completed-tv-list');
 
-    console.log('[MobiFlix] Ready.');
+    console.log('[MobiFlix] Ready. Vivamax:', vivamaxData.results.length);
   } catch (err) { console.error('[MobiFlix] Init error:', err); }
 }
 
