@@ -1,5 +1,5 @@
 {
-  "version": "v31",
+  "version": "v32",
   "released": "2026-09-17",
-  "notes": "Trailer Playback + Episode Progress"
+  "notes": "Fixed: Trailer back button at auto-stop ng trailer sa background"
 }
