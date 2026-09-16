@@ -9,9 +9,6 @@ const USERS = [
   { username: 'mobiflix', password: '7777' }
 ];
 
-// ============================================
-//   LOGIN EXPIRATION SETTINGS
-// ============================================
 // Ilang ORAS bago ma-expire yung login session
 const SESSION_HOURS = 6;
 
@@ -114,9 +111,7 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 });
 
-// ============================================
-//   AUTO-CHECK SESSION EVERY MINUTE
-// ============================================
+// Auto-check session every minute
 setInterval(function() {
   if (!isLoggedIn()) {
     const loginScreen = document.getElementById('login-screen');
