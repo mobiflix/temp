@@ -470,7 +470,7 @@ async function generateNotifications() {
         title: item.title,
         poster_path: item.poster_path,
         type: 'new_release',
-        message: 'Bagong movie!',
+        message: 'New movie released!',
         createdAt: Date.now(),
         read: false
       });
@@ -483,7 +483,7 @@ async function generateNotifications() {
         title: item.name,
         poster_path: item.poster_path,
         type: 'new_release',
-        message: 'Bagong TV show!',
+        message: 'New TV show released!',
         createdAt: Date.now(),
         read: false
       });
@@ -582,7 +582,6 @@ function openUserProfile() {
   } catch (e) {}
   document.getElementById('profile-username').textContent = username;
 
-  // Set notif toggle state
   const notifToggle = document.getElementById('notif-toggle');
   if (notifToggle) notifToggle.checked = isNotifEnabled();
 
@@ -1379,7 +1378,6 @@ async function showDetails(item) {
   renderCast(cast);
   renderSimilar(similar, mediaType);
 
-  // Refresh continue watching row
   renderContinueWatching();
 }
 
