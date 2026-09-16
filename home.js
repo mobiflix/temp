@@ -90,15 +90,16 @@ let ongoingPageState = {};
 let completedPageState = {};
 
 // ============================================================
-// POPSTATE HANDLER
+// POPSTATE HANDLER — FIXED (isang click lang)
 // ============================================================
 window.addEventListener('popstate', function(e) {
-  // PRIORITY 1: Trailer modal
+  // PRIORITY 1: Trailer modal — direkta nang i-clear
   const trailerModal = document.getElementById('trailer-modal');
   if (trailerModal && trailerModal.classList.contains('open')) {
-    closeTrailer();
+    const iframe = document.getElementById('trailer-iframe');
+    if (iframe) iframe.src = '';
+    trailerModal.classList.remove('open');
 
-    // Kung may details modal sa likod, ibalik ang overflow
     const detailsModal = document.getElementById('modal');
     if (detailsModal && detailsModal.style.display === 'flex') {
       document.body.style.overflow = 'hidden';
@@ -254,7 +255,6 @@ function playTrailer() {
   modal.classList.add('open');
   document.body.style.overflow = 'hidden';
 
-  // Magdagdag ng history state para sa trailer
   history.pushState({ mobiflixTrailer: true }, '');
 }
 
@@ -264,7 +264,6 @@ function closeTrailer() {
   iframe.src = '';
   modal.classList.remove('open');
 
-  // Ibalik ang body overflow depende sa modal state
   const detailsModal = document.getElementById('modal');
   if (detailsModal && detailsModal.style.display === 'flex') {
     document.body.style.overflow = 'hidden';
@@ -992,7 +991,7 @@ function renderGenresInMore() {
 }
 
 // ============================================================
-// FILTERS (UNIFIED)
+// FILTERS
 // ============================================================
 
 const FILTER_PANEL_MAP = {
@@ -1179,7 +1178,6 @@ function buildFilterParams(filters, mediaType) {
 // ============================================================
 
 function closeAllPagesOnly() {
-  // Isara muna ang trailer kung bukas
   const trailerModal = document.getElementById('trailer-modal');
   if (trailerModal && trailerModal.classList.contains('open')) {
     const iframe = document.getElementById('trailer-iframe');
@@ -1653,7 +1651,6 @@ async function showDetails(item) {
   const mediaType = item.media_type || (item.title ? 'movie' : 'tv');
   const itemId = item.id;
 
-  // Hide trailer button initially
   const trailerBtn = document.getElementById('btn-trailer');
   if (trailerBtn) trailerBtn.style.display = 'none';
   currentTrailerKey = null;
@@ -1677,7 +1674,6 @@ async function showDetails(item) {
   renderCast(cast);
   renderSimilar(similar, mediaType);
 
-  // Show trailer button if available
   if (trailerKey) {
     currentTrailerKey = trailerKey;
     if (trailerBtn) trailerBtn.style.display = 'flex';
@@ -1957,7 +1953,6 @@ function setActiveNav(name) {
 }
 
 function goHome() {
-  // Isara muna ang trailer
   const trailerModal = document.getElementById('trailer-modal');
   if (trailerModal && trailerModal.classList.contains('open')) {
     const iframe = document.getElementById('trailer-iframe');
@@ -2320,14 +2315,12 @@ init();
 
 document.addEventListener('keydown', function(e) {
   if (e.key === 'Escape') {
-    // PRIORITY 1: Trailer
     const trailerModal = document.getElementById('trailer-modal');
     if (trailerModal && trailerModal.classList.contains('open')) {
       closeTrailer();
       return;
     }
 
-    // PRIORITY 2: Details modal
     const modal = document.getElementById('modal');
     if (modal && modal.style.display === 'flex') {
       if (history.state && history.state.mobiflixModal) {
@@ -2338,7 +2331,6 @@ document.addEventListener('keydown', function(e) {
       return;
     }
 
-    // PRIORITY 3: Pages
     closeAllPagesOnly();
   }
 });
