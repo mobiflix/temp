@@ -1,5 +1,5 @@
 {
-  "version": "v32",
+  "version": "v33",
   "released": "2026-09-17",
-  "notes": "Fixed: Trailer back button at auto-stop ng trailer sa background"
+  "notes": "Fixed: Trailer back button (isang click), Filters responsive, Year filter 2015-2026"
 }
