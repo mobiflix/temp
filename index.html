@@ -8,15 +8,15 @@
   <meta http-equiv="Expires" content="0">
   <title>MobiFlix</title>
 
-  <link rel="stylesheet" href="home.css?v=29">
-  <link rel="manifest" href="manifest.json?v=29">
+  <link rel="stylesheet" href="home.css?v=30">
+  <link rel="manifest" href="manifest.json?v=30">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-  <script defer src="auth.js?v=29"></script>
-  <script defer src="home.js?v=29"></script>
+  <script defer src="auth.js?v=30"></script>
+  <script defer src="home.js?v=30"></script>
 
   <script>
     (function() {
-      const CURRENT_VERSION = 'v29';
+      const CURRENT_VERSION = 'v30';
       const CHECK_INTERVAL = 60000;
 
       async function checkForUpdates() {
@@ -78,6 +78,9 @@
         <a href="index.html" class="logo">Mobi<span>Flix</span></a>
       </div>
       <div class="nav-right">
+        <button class="nav-icon-btn" onclick="openRandomMovie()" aria-label="Random Movie" title="Surprise Me!">
+          <i class="fa fa-dice"></i>
+        </button>
         <button class="nav-icon-btn" onclick="toggleTheme()" aria-label="Toggle theme">
           <i class="fa fa-moon" id="theme-toggle-icon"></i>
         </button>
@@ -91,22 +94,25 @@
       </div>
     </nav>
 
-    <!-- ===== HERO BANNER ===== -->
-    <div class="hero" id="banner">
-      <div class="hero-overlay"></div>
-      <div class="hero-content">
-        <h1 id="banner-title">Loading...</h1>
-        <div class="hero-meta" id="banner-meta">
-          <span class="hero-rating" id="banner-rating"></span>
-          <span class="hero-year" id="banner-year"></span>
-          <span class="hero-type" id="banner-type"></span>
-        </div>
-        <p class="hero-description" id="banner-description"></p>
-        <div class="hero-buttons">
-          <button class="btn-play" onclick="playBanner()"><i class="fa fa-play"></i> Play</button>
-          <button class="btn-info" onclick="showBannerDetails()"><i class="fa fa-info-circle"></i> More Info</button>
+    <!-- ===== HERO CAROUSEL ===== -->
+    <div class="hero-carousel" id="hero-carousel">
+      <div class="hero" id="banner">
+        <div class="hero-overlay"></div>
+        <div class="hero-content">
+          <h1 id="banner-title">Loading...</h1>
+          <div class="hero-meta" id="banner-meta">
+            <span class="hero-rating" id="banner-rating"></span>
+            <span class="hero-year" id="banner-year"></span>
+            <span class="hero-type" id="banner-type"></span>
+          </div>
+          <p class="hero-description" id="banner-description"></p>
+          <div class="hero-buttons">
+            <button class="btn-play" onclick="playBanner()"><i class="fa fa-play"></i> Play</button>
+            <button class="btn-info" onclick="showBannerDetails()"><i class="fa fa-info-circle"></i> More Info</button>
+          </div>
         </div>
       </div>
+      <div class="hero-dots" id="hero-dots"></div>
     </div>
 
     <!-- ===== CONTENT ROWS ===== -->
@@ -169,7 +175,7 @@
     </div>
 
     <!-- ===== VIEW ALL PAGE ===== -->
-    <div class="view-all-page" id="view-all-page">
+    <div class="view-all-page page-transition" id="view-all-page">
       <div class="view-all-header">
         <button class="back-btn" onclick="closeViewAll()"><i class="fa fa-arrow-left"></i> Back</button>
         <h2 id="view-all-title">All Movies</h2>
@@ -246,7 +252,7 @@
     </div>
 
     <!-- ===== VIVAMAX PAGE ===== -->
-    <div class="view-all-page" id="vivamax-page">
+    <div class="view-all-page page-transition" id="vivamax-page">
       <div class="view-all-header">
         <button class="back-btn" onclick="closeVivamaxPage()"><i class="fa fa-arrow-left"></i> Back</button>
         <h2>🔞 Vivamax Movies</h2>
@@ -321,7 +327,7 @@
     </div>
 
     <!-- ===== GENRE PAGE ===== -->
-    <div class="view-all-page" id="genre-page">
+    <div class="view-all-page page-transition" id="genre-page">
       <div class="view-all-header">
         <button class="back-btn" onclick="closeGenrePage()"><i class="fa fa-arrow-left"></i> Back</button>
         <h2 id="genre-page-title">Genre</h2>
@@ -385,7 +391,7 @@
     </div>
 
     <!-- ===== ONGOING TV PAGE ===== -->
-    <div class="view-all-page" id="ongoing-page">
+    <div class="view-all-page page-transition" id="ongoing-page">
       <div class="view-all-header">
         <button class="back-btn" onclick="closeOngoingPage()"><i class="fa fa-arrow-left"></i> Back</button>
         <h2>🔴 Ongoing TV Shows</h2>
@@ -400,7 +406,7 @@
     </div>
 
     <!-- ===== COMPLETED TV PAGE ===== -->
-    <div class="view-all-page" id="completed-page">
+    <div class="view-all-page page-transition" id="completed-page">
       <div class="view-all-header">
         <button class="back-btn" onclick="closeCompletedPage()"><i class="fa fa-arrow-left"></i> Back</button>
         <h2>✅ Completed TV Shows</h2>
@@ -415,7 +421,7 @@
     </div>
 
     <!-- ===== PROVIDER PAGE ===== -->
-    <div class="view-all-page" id="provider-page">
+    <div class="view-all-page page-transition" id="provider-page">
       <div class="view-all-header">
         <button class="back-btn" onclick="closeProviderPage()"><i class="fa fa-arrow-left"></i> Back</button>
         <h2 id="provider-page-title">Provider</h2>
@@ -492,7 +498,7 @@
     </div>
 
     <!-- ===== MOVIES PAGE ===== -->
-    <div class="movies-page" id="movies-page">
+    <div class="movies-page page-transition" id="movies-page">
       <div class="view-all-header">
         <button class="back-btn" onclick="closeMoviesPage()"><i class="fa fa-arrow-left"></i> Back</button>
         <h2>🎬 Movies</h2>
@@ -569,7 +575,7 @@
     </div>
 
     <!-- ===== SERIES PAGE ===== -->
-    <div class="series-page" id="series-page">
+    <div class="series-page page-transition" id="series-page">
       <div class="view-all-header">
         <button class="back-btn" onclick="closeSeriesPage()"><i class="fa fa-arrow-left"></i> Back</button>
         <h2>📺 Series</h2>
@@ -646,7 +652,7 @@
     </div>
 
     <!-- ===== MY LIST PAGE ===== -->
-    <div class="my-list-page" id="my-list-page">
+    <div class="my-list-page page-transition" id="my-list-page">
       <div class="view-all-header">
         <button class="back-btn" onclick="closeMyListPage()"><i class="fa fa-arrow-left"></i> Back</button>
         <h2>🔖 My List</h2>
@@ -660,7 +666,7 @@
     </div>
 
     <!-- ===== GENRE PAGE (dating "More") ===== -->
-    <div class="more-page" id="more-page">
+    <div class="more-page page-transition" id="more-page">
       <div class="view-all-header">
         <button class="back-btn" onclick="closeMorePage()"><i class="fa fa-arrow-left"></i> Back</button>
         <h2>🎭 Genres</h2>
@@ -669,20 +675,27 @@
     </div>
 
     <!-- ===== USER PROFILE PAGE ===== -->
-    <div class="user-profile-page" id="user-profile-page">
+    <div class="user-profile-page page-transition" id="user-profile-page">
       <div class="view-all-header">
         <button class="back-btn" onclick="closeUserProfile()"><i class="fa fa-arrow-left"></i> Back</button>
         <h2>👤 Profile</h2>
       </div>
 
       <div class="profile-header">
-        <div class="profile-avatar">
+        <div class="profile-avatar" id="profile-avatar-display">
           <i class="fa fa-user"></i>
         </div>
         <div class="profile-info">
           <h3 id="profile-username">User</h3>
           <p>MobiFlix Member</p>
         </div>
+      </div>
+
+      <div class="profile-section">
+        <h3 class="profile-section-title">
+          <i class="fa fa-smile"></i> Choose Avatar
+        </h3>
+        <div class="avatar-grid" id="avatar-grid"></div>
       </div>
 
       <div class="profile-section">
@@ -744,7 +757,7 @@
     </div>
 
     <!-- ===== SEARCH PAGE ===== -->
-    <div class="search-modal" id="search-modal">
+    <div class="search-modal page-transition" id="search-modal">
       <div class="view-all-header">
         <button class="back-btn" onclick="closeSearchModal()"><i class="fa fa-arrow-left"></i> Back</button>
         <h2>Search</h2>
@@ -802,6 +815,9 @@
               <button class="btn-play-now" onclick="playNow()">
                 <i class="fa fa-play"></i> Play Now
               </button>
+              <button class="btn-trailer" onclick="playTrailer()" id="btn-trailer" style="display:none;">
+                <i class="fa fa-film"></i> Trailer
+              </button>
               <button class="btn-add-list" onclick="toggleAddToList()">
                 <i class="fa fa-bookmark" id="bookmark-icon"></i> <span id="bookmark-text">Add to List</span>
               </button>
@@ -828,6 +844,18 @@
           </div>
         </div>
 
+      </div>
+    </div>
+
+    <!-- ===== TRAILER MODAL ===== -->
+    <div class="trailer-modal" id="trailer-modal">
+      <div class="trailer-content">
+        <button class="trailer-close-btn" onclick="closeTrailer()">
+          <i class="fa fa-times"></i>
+        </button>
+        <div class="trailer-wrapper">
+          <iframe id="trailer-iframe" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+        </div>
       </div>
     </div>
 
