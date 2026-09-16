@@ -1,12 +1,32 @@
 /* ===== RESET & BASE ===== */
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
+html { scroll-behavior: smooth; }
+
 body {
   font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
   background: #0b0b0b;
   color: #e5e5e5;
   overflow-x: hidden;
   padding-bottom: 120px;
+}
+
+/* ===== PAGE TRANSITIONS ===== */
+.page-transition {
+  opacity: 0;
+  transition: opacity 0.3s ease, transform 0.3s ease;
+  transform: translateY(10px);
+}
+
+.page-transition.open {
+  opacity: 1;
+  transform: translateY(0);
+  animation: pageSlideIn 0.35s ease forwards;
+}
+
+@keyframes pageSlideIn {
+  from { opacity: 0; transform: translateY(15px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 /* ===== NAVBAR ===== */
@@ -33,7 +53,6 @@ body {
 }
 .logo span { color: #ffffff; }
 
-/* ===== NAV ICON BUTTONS ===== */
 .nav-right {
   display: flex;
   align-items: center;
@@ -60,6 +79,8 @@ body {
   border-color: #e50914;
   transform: scale(1.08);
 }
+
+.nav-icon-btn:active { transform: scale(0.95); }
 
 .notif-badge {
   position: absolute;
@@ -114,7 +135,13 @@ body {
 .bottom-nav-item:hover,
 .bottom-nav-item.active { color: #e50914; }
 
-/* ===== HERO ===== */
+/* ===== HERO CAROUSEL ===== */
+.hero-carousel {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+}
+
 .hero {
   position: relative;
   height: 90vh;
@@ -124,7 +151,8 @@ body {
   display: flex;
   align-items: flex-end;
   padding: 0 60px 100px;
-  transition: background-image 0.8s ease;
+  transition: background-image 0.8s ease, transform 0.1s linear;
+  will-change: transform;
 }
 
 .hero-overlay {
@@ -219,6 +247,63 @@ body {
   display: -webkit-box; -webkit-line-clamp: 3;
   -webkit-box-orient: vertical; overflow: hidden;
   text-shadow: 0 2px 12px rgba(0,0,0,0.9);
+}
+
+/* ===== HERO DOTS ===== */
+.hero-dots {
+  position: absolute;
+  bottom: 30px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 10px;
+  z-index: 5;
+}
+
+.hero-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.3);
+  cursor: pointer;
+  transition: 0.3s;
+  border: none;
+  padding: 0;
+}
+
+.hero-dot:hover { background: rgba(255,255,255,0.6); }
+
+.hero-dot.active {
+  background: #e50914;
+  width: 30px;
+  border-radius: 5px;
+  box-shadow: 0 0 15px rgba(229,9,20,0.6);
+}
+
+/* ===== SKELETON LOADING ===== */
+@keyframes skeletonShimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.skeleton-poster,
+.skeleton-top10 {
+  background: linear-gradient(90deg, #1a1a1a 25%, #252525 50%, #1a1a1a 75%);
+  background-size: 200% 100%;
+  animation: skeletonShimmer 1.5s infinite;
+  border-radius: 8px;
+}
+
+.skeleton-poster {
+  width: 180px;
+  aspect-ratio: 2 / 3;
+  flex-shrink: 0;
+}
+
+.skeleton-top10 {
+  width: 140px;
+  aspect-ratio: 2 / 3;
+  flex-shrink: 0;
 }
 
 /* ===== CONTENT ===== */
@@ -748,6 +833,31 @@ body {
   transform: scale(1.02);
 }
 
+.btn-trailer {
+  flex: 1;
+  max-width: 220px;
+  min-width: 150px;
+  padding: 14px 28px;
+  border: 1px solid rgba(229,9,20,0.5);
+  border-radius: 8px;
+  background: rgba(229,9,20,0.15);
+  color: #ff6b6b;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+.btn-trailer:hover {
+  background: #e50914;
+  color: #fff;
+  border-color: #e50914;
+  transform: scale(1.02);
+}
+
 .btn-add-list {
   flex: 1;
   max-width: 220px;
@@ -849,6 +959,7 @@ body {
   cursor: pointer;
   transition: 0.25s;
   align-items: center;
+  position: relative;
 }
 .episode-item:hover {
   background: rgba(255,255,255,0.08);
@@ -916,6 +1027,31 @@ body {
 .episode-item:hover .episode-play-icon {
   transform: scale(1.15);
   box-shadow: 0 0 20px rgba(229,9,20,0.5);
+}
+
+/* ===== EPISODE PROGRESS INDICATOR ===== */
+.episode-item.watched::after {
+  content: '✓';
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: #22c55e;
+  color: #fff;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: bold;
+  box-shadow: 0 0 10px rgba(34,197,94,0.5);
+}
+
+.episode-item.watched .episode-number::after {
+  content: ' • Watched';
+  color: #22c55e;
+  font-size: 10px;
 }
 
 .episodes-loading {
@@ -1047,10 +1183,17 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 36px;
+  font-size: 40px;
   color: #fff;
   flex-shrink: 0;
   box-shadow: 0 8px 30px rgba(229,9,20,0.4);
+  transition: 0.3s;
+}
+
+.profile-avatar.avatar-emoji {
+  font-size: 48px;
+  background: rgba(255,255,255,0.08);
+  border: 2px solid rgba(255,255,255,0.15);
 }
 
 .profile-info h3 {
@@ -1081,6 +1224,40 @@ body {
 
 .profile-section-title i {
   color: #e50914;
+}
+
+/* ===== AVATAR PICKER ===== */
+.avatar-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 10px;
+}
+
+.avatar-option {
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.06);
+  border: 2px solid rgba(255,255,255,0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  cursor: pointer;
+  transition: 0.25s;
+  user-select: none;
+}
+
+.avatar-option:hover {
+  background: rgba(255,255,255,0.12);
+  transform: scale(1.1);
+  border-color: rgba(255,255,255,0.3);
+}
+
+.avatar-option.active {
+  border-color: #e50914;
+  background: rgba(229,9,20,0.15);
+  box-shadow: 0 0 20px rgba(229,9,20,0.4);
+  transform: scale(1.08);
 }
 
 /* Watch History Grid */
@@ -1187,9 +1364,6 @@ body {
 }
 .theme-preview-purple {
   background: linear-gradient(135deg, #13071f 50%, #a855f7 50%);
-}
-.theme-preview-green {
-  background: linear-gradient(135deg, #071a0f 50%, #22c55e 50%);
 }
 
 .theme-option span {
@@ -1523,6 +1697,71 @@ body {
   font-size: 13px;
 }
 
+/* ===== TRAILER MODAL ===== */
+.trailer-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.95);
+  backdrop-filter: blur(10px);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 900;
+  padding: 20px;
+}
+
+.trailer-modal.open { display: flex; }
+
+.trailer-content {
+  position: relative;
+  width: 100%;
+  max-width: 1000px;
+  animation: trailerIn 0.3s ease;
+}
+
+@keyframes trailerIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.trailer-close-btn {
+  position: absolute;
+  top: -50px;
+  right: 0;
+  background: rgba(255,255,255,0.1);
+  border: 1px solid rgba(255,255,255,0.2);
+  color: #fff;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+}
+.trailer-close-btn:hover {
+  background: #e50914;
+  border-color: #e50914;
+  transform: scale(1.1);
+}
+
+.trailer-wrapper {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background: #000;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 20px 80px rgba(0,0,0,0.9);
+}
+
+.trailer-wrapper iframe {
+  width: 100%;
+  height: 100%;
+  border: none;
+}
+
 /* ===== LIGHT THEME ===== */
 body.theme-light {
   background: #f5f5f5;
@@ -1533,9 +1772,7 @@ body.theme-light .navbar {
   background: linear-gradient(180deg, rgba(245,245,245,0.98) 0%, rgba(245,245,245,0.7) 70%, transparent 100%);
 }
 
-body.theme-light .logo span {
-  color: #1a1a1a;
-}
+body.theme-light .logo span { color: #1a1a1a; }
 
 body.theme-light .bottom-nav {
   background: #ffffff;
@@ -1543,9 +1780,7 @@ body.theme-light .bottom-nav {
   box-shadow: 0 -8px 30px rgba(0,0,0,0.08);
 }
 
-body.theme-light .bottom-nav-item {
-  color: #666;
-}
+body.theme-light .bottom-nav-item { color: #666; }
 
 body.theme-light .hero-overlay {
   background:
@@ -1558,13 +1793,8 @@ body.theme-light .hero-content h1 {
   text-shadow: 0 4px 30px rgba(255,255,255,0.9);
 }
 
-body.theme-light .hero-description {
-  color: #444;
-}
-
-body.theme-light .row h2 {
-  color: #1a1a1a;
-}
+body.theme-light .hero-description { color: #444; }
+body.theme-light .row h2 { color: #1a1a1a; }
 
 body.theme-light .view-all-page,
 body.theme-light .movies-page,
@@ -1581,9 +1811,7 @@ body.theme-light .view-all-header {
   border-bottom-color: rgba(0,0,0,0.08);
 }
 
-body.theme-light .view-all-header h2 {
-  color: #1a1a1a;
-}
+body.theme-light .view-all-header h2 { color: #1a1a1a; }
 
 body.theme-light .back-btn {
   background: rgba(0,0,0,0.05);
@@ -1591,51 +1819,27 @@ body.theme-light .back-btn {
   color: #1a1a1a;
 }
 
-body.theme-light .modal-content {
-  background: #ffffff;
-}
-
-body.theme-light .details-body {
-  background: #ffffff;
-}
+body.theme-light .modal-content { background: #ffffff; }
+body.theme-light .details-body { background: #ffffff; }
 
 body.theme-light .details-poster-overlay {
   background: linear-gradient(0deg, #ffffff 0%, rgba(255,255,255,0.4) 50%, transparent 100%);
 }
 
-body.theme-light .details-body h2 {
-  color: #1a1a1a;
-}
-
+body.theme-light .details-body h2 { color: #1a1a1a; }
 body.theme-light .details-year,
-body.theme-light .details-runtime {
-  color: #666;
-}
-
-body.theme-light .details-description {
-  color: #555;
-}
-
-body.theme-light .section-title {
-  color: #1a1a1a;
-}
+body.theme-light .details-runtime { color: #666; }
+body.theme-light .details-description { color: #555; }
+body.theme-light .section-title { color: #1a1a1a; }
 
 body.theme-light .episode-item {
   background: rgba(0,0,0,0.03);
   border-color: rgba(0,0,0,0.06);
 }
 
-body.theme-light .episode-name {
-  color: #1a1a1a;
-}
-
-body.theme-light .episode-overview {
-  color: #666;
-}
-
-body.theme-light .cast-name {
-  color: #1a1a1a;
-}
+body.theme-light .episode-name { color: #1a1a1a; }
+body.theme-light .episode-overview { color: #666; }
+body.theme-light .cast-name { color: #1a1a1a; }
 
 body.theme-light .nav-icon-btn {
   background: rgba(0,0,0,0.05);
@@ -1643,9 +1847,7 @@ body.theme-light .nav-icon-btn {
   color: #1a1a1a;
 }
 
-body.theme-light .notif-badge {
-  border-color: #f5f5f5;
-}
+body.theme-light .notif-badge { border-color: #f5f5f5; }
 
 body.theme-light .filter-panel {
   background: rgba(0,0,0,0.03);
@@ -1663,26 +1865,16 @@ body.theme-light .switch-row {
   border-color: rgba(0,0,0,0.08);
 }
 
-body.theme-light .switch-row span:first-child {
-  color: #333;
-}
-
-body.theme-light .switch {
-  background: rgba(0,0,0,0.15);
-}
+body.theme-light .switch-row span:first-child { color: #333; }
+body.theme-light .switch { background: rgba(0,0,0,0.15); }
 
 body.theme-light .notif-panel {
   background: #ffffff;
   border-color: rgba(0,0,0,0.1);
 }
 
-body.theme-light .notif-item-title {
-  color: #1a1a1a;
-}
-
-body.theme-light .notif-item:hover {
-  background: rgba(0,0,0,0.04);
-}
+body.theme-light .notif-item-title { color: #1a1a1a; }
+body.theme-light .notif-item:hover { background: rgba(0,0,0,0.04); }
 
 body.theme-light .season-btn {
   background: rgba(0,0,0,0.05);
@@ -1695,121 +1887,64 @@ body.theme-light .season-btn:hover {
   color: #1a1a1a;
 }
 
-body.theme-light .continue-title {
-  color: #1a1a1a;
-}
-
-body.theme-light .more-list a {
-  color: #444;
-}
+body.theme-light .continue-title { color: #1a1a1a; }
+body.theme-light .more-list a { color: #444; }
 
 body.theme-light .more-list a:hover {
   color: #1a1a1a;
   background: rgba(0,0,0,0.04);
 }
 
+body.theme-light .avatar-option {
+  background: rgba(0,0,0,0.05);
+  border-color: rgba(0,0,0,0.1);
+}
+
+body.theme-light .avatar-option:hover {
+  background: rgba(0,0,0,0.1);
+}
+
+body.theme-light .profile-avatar.avatar-emoji {
+  background: rgba(0,0,0,0.05);
+  border-color: rgba(0,0,0,0.1);
+}
+
+body.theme-light .skeleton-poster,
+body.theme-light .skeleton-top10 {
+  background: linear-gradient(90deg, #e0e0e0 25%, #f0f0f0 50%, #e0e0e0 75%);
+  background-size: 200% 100%;
+}
+
 /* ===== THEME VARIATIONS ===== */
-body.theme-blue {
-  background: #0a0e1a;
-}
-body.theme-blue .bottom-nav {
-  background: #0d1425;
-}
-body.theme-blue .logo {
-  color: #1e90ff;
-}
+body.theme-blue { background: #0a0e1a; }
+body.theme-blue .bottom-nav { background: #0d1425; }
+body.theme-blue .logo { color: #1e90ff; }
 body.theme-blue .bottom-nav-item.active,
-body.theme-blue .bottom-nav-item:hover {
-  color: #1e90ff;
-}
-body.theme-blue .row h2::before {
-  background: #1e90ff;
-}
-body.theme-blue .season-btn.active {
-  background: #1e90ff;
-  border-color: #1e90ff;
-}
-body.theme-blue .episode-number {
-  color: #1e90ff;
-}
-body.theme-blue .episode-play-icon {
-  background: #1e90ff;
-}
-body.theme-blue .profile-avatar {
-  background: linear-gradient(135deg, #1e90ff, #0066cc);
-}
-body.theme-blue .nav-icon-btn:hover {
-  background: #1e90ff;
-  border-color: #1e90ff;
-}
+body.theme-blue .bottom-nav-item:hover { color: #1e90ff; }
+body.theme-blue .row h2::before { background: #1e90ff; }
+body.theme-blue .season-btn.active { background: #1e90ff; border-color: #1e90ff; }
+body.theme-blue .episode-number { color: #1e90ff; }
+body.theme-blue .episode-play-icon { background: #1e90ff; }
+body.theme-blue .profile-avatar { background: linear-gradient(135deg, #1e90ff, #0066cc); }
+body.theme-blue .nav-icon-btn:hover { background: #1e90ff; border-color: #1e90ff; }
+body.theme-blue .hero-dot.active { background: #1e90ff; box-shadow: 0 0 15px rgba(30,144,255,0.6); }
+body.theme-blue .filter-btn { background: rgba(30,144,255,0.15); border-color: rgba(30,144,255,0.4); color: #4facfe; }
+body.theme-blue .filter-btn:hover { background: #1e90ff; color: #fff; }
 
-body.theme-purple {
-  background: #13071f;
-}
-body.theme-purple .bottom-nav {
-  background: #1a0b28;
-}
-body.theme-purple .logo {
-  color: #a855f7;
-}
+body.theme-purple { background: #13071f; }
+body.theme-purple .bottom-nav { background: #1a0b28; }
+body.theme-purple .logo { color: #a855f7; }
 body.theme-purple .bottom-nav-item.active,
-body.theme-purple .bottom-nav-item:hover {
-  color: #a855f7;
-}
-body.theme-purple .row h2::before {
-  background: #a855f7;
-}
-body.theme-purple .season-btn.active {
-  background: #a855f7;
-  border-color: #a855f7;
-}
-body.theme-purple .episode-number {
-  color: #a855f7;
-}
-body.theme-purple .episode-play-icon {
-  background: #a855f7;
-}
-body.theme-purple .profile-avatar {
-  background: linear-gradient(135deg, #a855f7, #7c3aed);
-}
-body.theme-purple .nav-icon-btn:hover {
-  background: #a855f7;
-  border-color: #a855f7;
-}
-
-body.theme-green {
-  background: #071a0f;
-}
-body.theme-green .bottom-nav {
-  background: #0a2515;
-}
-body.theme-green .logo {
-  color: #22c55e;
-}
-body.theme-green .bottom-nav-item.active,
-body.theme-green .bottom-nav-item:hover {
-  color: #22c55e;
-}
-body.theme-green .row h2::before {
-  background: #22c55e;
-}
-body.theme-green .season-btn.active {
-  background: #22c55e;
-  border-color: #22c55e;
-}
-body.theme-green .episode-number {
-  color: #22c55e;
-}
-body.theme-green .episode-play-icon {
-  background: #22c55e;
-}
-body.theme-green .profile-avatar {
-  background: linear-gradient(135deg, #22c55e, #16a34a);
-}
-body.theme-green .nav-icon-btn:hover {
-  background: #22c55e;
-  border-color: #22c55e;
-}
+body.theme-purple .bottom-nav-item:hover { color: #a855f7; }
+body.theme-purple .row h2::before { background: #a855f7; }
+body.theme-purple .season-btn.active { background: #a855f7; border-color: #a855f7; }
+body.theme-purple .episode-number { color: #a855f7; }
+body.theme-purple .episode-play-icon { background: #a855f7; }
+body.theme-purple .profile-avatar { background: linear-gradient(135deg, #a855f7, #7c3aed); }
+body.theme-purple .nav-icon-btn:hover { background: #a855f7; border-color: #a855f7; }
+body.theme-purple .hero-dot.active { background: #a855f7; box-shadow: 0 0 15px rgba(168,85,247,0.6); }
+body.theme-purple .filter-btn { background: rgba(168,85,247,0.15); border-color: rgba(168,85,247,0.4); color: #c084fc; }
+body.theme-purple .filter-btn:hover { background: #a855f7; color: #fff; }
 
 /* ===== FOOTER ===== */
 .footer {
@@ -1982,6 +2117,10 @@ body.locked { overflow: hidden; }
   .hero-rating, .hero-year { font-size: 13px; }
   .btn-play, .btn-info { padding: 11px 22px; font-size: 14px; }
 
+  .hero-dots { bottom: 20px; gap: 8px; }
+  .hero-dot { width: 8px; height: 8px; }
+  .hero-dot.active { width: 24px; }
+
   .content { padding: 0 16px 40px; margin-top: -60px; }
   .row { margin-bottom: 32px; }
   .row-header { flex-wrap: wrap; gap: 8px; }
@@ -1991,12 +2130,14 @@ body.locked { overflow: hidden; }
 
   .horizontal-scroll { gap: 10px; }
   .horizontal-scroll img { width: 130px; }
+  .skeleton-poster { width: 130px; }
 
   .continue-card { width: 180px; }
   .continue-title { font-size: 12px; }
 
   .top10-number { font-size: 80px; -webkit-text-stroke: 2px #555; letter-spacing: -5px; }
   .top10-item img { width: 105px; }
+  .skeleton-top10 { width: 105px; }
 
   .view-all-grid, .my-list-grid { grid-template-columns: repeat(4, 1fr); gap: 10px; }
   .search-modal .results { grid-template-columns: repeat(4, 1fr); gap: 10px; }
@@ -2020,7 +2161,7 @@ body.locked { overflow: hidden; }
   .details-year, .details-runtime { font-size: 14px; }
   .details-description { font-size: 14px; }
   .details-buttons { gap: 10px; margin-bottom: 18px; }
-  .btn-play-now, .btn-add-list {
+  .btn-play-now, .btn-add-list, .btn-trailer {
     padding: 12px 20px;
     font-size: 15px;
     max-width: 180px;
@@ -2051,13 +2192,17 @@ body.locked { overflow: hidden; }
   .similar-scroll img { width: 110px; }
 
   .profile-header { padding: 18px; gap: 14px; }
-  .profile-avatar { width: 64px; height: 64px; font-size: 28px; }
+  .profile-avatar { width: 64px; height: 64px; font-size: 32px; }
+  .profile-avatar.avatar-emoji { font-size: 40px; }
   .profile-info h3 { font-size: 20px; }
   .profile-section-title { font-size: 16px; }
   .history-grid { grid-template-columns: repeat(4, 1fr); gap: 8px; }
   .theme-options { grid-template-columns: repeat(4, 1fr); gap: 8px; }
   .theme-option { padding: 8px; }
   .theme-option span { font-size: 11px; }
+
+  .avatar-grid { grid-template-columns: repeat(6, 1fr); gap: 8px; }
+  .avatar-option { font-size: 24px; }
 
   .filter-panel { padding: 14px; }
   .filter-group label { font-size: 11px; }
@@ -2075,6 +2220,9 @@ body.locked { overflow: hidden; }
   .switch-row span:first-child { font-size: 13px; }
 
   .section-title { font-size: 16px; }
+
+  .trailer-modal { padding: 10px; }
+  .trailer-close-btn { top: -45px; width: 38px; height: 38px; }
 }
 
 @media (max-width: 480px) {
@@ -2089,6 +2237,7 @@ body.locked { overflow: hidden; }
   .provider-card { width: 110px; height: 65px; padding: 10px; }
   .top10-number { font-size: 64px; letter-spacing: -4px; }
   .top10-item img { width: 88px; }
+  .skeleton-top10 { width: 88px; }
   .login-box { padding: 32px 24px; }
   .login-logo { font-size: 26px; }
   .login-box h2 { font-size: 20px; }
@@ -2105,6 +2254,9 @@ body.locked { overflow: hidden; }
   .history-grid { grid-template-columns: repeat(4, 1fr); gap: 6px; }
   .theme-options { grid-template-columns: repeat(4, 1fr); gap: 6px; }
   .theme-option span { font-size: 10px; }
+
+  .avatar-grid { grid-template-columns: repeat(4, 1fr); gap: 6px; }
+  .avatar-option { font-size: 22px; }
 
   .continue-card { width: 150px; }
   .continue-title { font-size: 11px; }
