@@ -90,22 +90,25 @@ let ongoingPageState = {};
 let completedPageState = {};
 
 // ============================================================
-// POPSTATE HANDLER — FIXED (isang click lang)
+// POPSTATE HANDLER — FIXED BLACK SCREEN
 // ============================================================
 window.addEventListener('popstate', function(e) {
-  // PRIORITY 1: Trailer modal — direkta nang i-clear
+  // PRIORITY 1: Trailer modal — isara agad, huwag hintayin ang YouTube
   const trailerModal = document.getElementById('trailer-modal');
   if (trailerModal && trailerModal.classList.contains('open')) {
     const iframe = document.getElementById('trailer-iframe');
-    if (iframe) iframe.src = '';
+    if (iframe) {
+      iframe.src = 'about:blank';
+      setTimeout(function() { iframe.src = ''; }, 50);
+    }
     trailerModal.classList.remove('open');
 
+    // Isara NA RIN agad ang details modal para walang black screen
     const detailsModal = document.getElementById('modal');
     if (detailsModal && detailsModal.style.display === 'flex') {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = '';
+      detailsModal.style.display = 'none';
     }
+    document.body.style.overflow = '';
     return;
   }
 
@@ -255,13 +258,15 @@ function playTrailer() {
   modal.classList.add('open');
   document.body.style.overflow = 'hidden';
 
+  // History state para sa trailer — isang push lang
   history.pushState({ mobiflixTrailer: true }, '');
 }
 
 function closeTrailer() {
   const modal = document.getElementById('trailer-modal');
   const iframe = document.getElementById('trailer-iframe');
-  iframe.src = '';
+  iframe.src = 'about:blank';
+  setTimeout(function() { iframe.src = ''; }, 50);
   modal.classList.remove('open');
 
   const detailsModal = document.getElementById('modal');
@@ -851,10 +856,8 @@ function playEpisode(tvId, seasonNumber, episodeNumber) {
   const url = `${ZXCSTREAM_TV}${tvId}/${seasonNumber}/${episodeNumber}`;
   console.log('[MobiFlix Episode]', url);
 
-  // Mark as watched
   markEpisodeWatched(tvId, seasonNumber, episodeNumber);
 
-  // Update the UI
   setTimeout(function() {
     loadSeasonEpisodes(tvId, seasonNumber);
   }, 500);
@@ -1181,7 +1184,10 @@ function closeAllPagesOnly() {
   const trailerModal = document.getElementById('trailer-modal');
   if (trailerModal && trailerModal.classList.contains('open')) {
     const iframe = document.getElementById('trailer-iframe');
-    if (iframe) iframe.src = '';
+    if (iframe) {
+      iframe.src = 'about:blank';
+      setTimeout(function() { iframe.src = ''; }, 50);
+    }
     trailerModal.classList.remove('open');
   }
 
@@ -1956,7 +1962,10 @@ function goHome() {
   const trailerModal = document.getElementById('trailer-modal');
   if (trailerModal && trailerModal.classList.contains('open')) {
     const iframe = document.getElementById('trailer-iframe');
-    if (iframe) iframe.src = '';
+    if (iframe) {
+      iframe.src = 'about:blank';
+      setTimeout(function() { iframe.src = ''; }, 50);
+    }
     trailerModal.classList.remove('open');
   }
 
