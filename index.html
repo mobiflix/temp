@@ -78,7 +78,7 @@
         <a href="index.html" class="logo">Mobi<span>Flix</span></a>
       </div>
       <div class="nav-right">
-        <button class="nav-icon-btn" onclick="toggleTheme()" id="theme-toggle-btn" aria-label="Toggle theme">
+        <button class="nav-icon-btn" onclick="toggleTheme()" aria-label="Toggle theme">
           <i class="fa fa-moon" id="theme-toggle-icon"></i>
         </button>
         <button class="nav-icon-btn" onclick="openNotifications()" aria-label="Notifications" style="position:relative;">
@@ -112,7 +112,7 @@
     <!-- ===== CONTENT ROWS ===== -->
     <div class="content">
 
-      <!-- CONTINUE WATCHING (BAGO) -->
+      <!-- CONTINUE WATCHING -->
       <div class="row" id="continue-watching-row" style="display:none;">
         <div class="row-header">
           <h2>▶️ Continue Watching</h2>
@@ -169,7 +169,7 @@
 
     </div>
 
-    <!-- ===== VIEW ALL PAGE (may Filters na) ===== -->
+    <!-- ===== VIEW ALL PAGE ===== -->
     <div class="view-all-page" id="view-all-page">
       <div class="view-all-header">
         <button class="back-btn" onclick="closeViewAll()"><i class="fa fa-arrow-left"></i> Back</button>
@@ -179,7 +179,6 @@
         </button>
       </div>
 
-      <!-- FILTER PANEL -->
       <div class="filter-panel" id="view-all-filter-panel" style="display:none;">
         <div class="filter-group">
           <label>Year</label>
@@ -312,7 +311,7 @@
       </div>
     </div>
 
-    <!-- ===== MOVIES PAGE (may Filters na) ===== -->
+    <!-- ===== MOVIES PAGE ===== -->
     <div class="movies-page" id="movies-page">
       <div class="view-all-header">
         <button class="back-btn" onclick="closeMoviesPage()"><i class="fa fa-arrow-left"></i> Back</button>
@@ -424,7 +423,6 @@
         <h2>👤 Profile</h2>
       </div>
 
-      <!-- Profile Header -->
       <div class="profile-header">
         <div class="profile-avatar">
           <i class="fa fa-user"></i>
@@ -435,7 +433,6 @@
         </div>
       </div>
 
-      <!-- Watch History -->
       <div class="profile-section">
         <h3 class="profile-section-title">
           <i class="fa fa-history"></i> Watch History
@@ -451,7 +448,6 @@
         </button>
       </div>
 
-      <!-- Themes -->
       <div class="profile-section">
         <h3 class="profile-section-title">
           <i class="fa fa-palette"></i> Theme
@@ -476,7 +472,6 @@
         </div>
       </div>
 
-      <!-- Notifications -->
       <div class="profile-section">
         <h3 class="profile-section-title">
           <i class="fa fa-bell"></i> Notifications
@@ -488,7 +483,6 @@
         </label>
       </div>
 
-      <!-- Logout -->
       <div class="profile-section">
         <button class="profile-logout-btn" onclick="handleLogout()">
           <i class="fa fa-sign-out-alt"></i> Log Out
@@ -510,7 +504,7 @@
       <div class="results" id="search-results"></div>
     </div>
 
-    <!-- ===== NOTIFICATIONS PANEL (BAGO) ===== -->
+    <!-- ===== NOTIFICATIONS PANEL ===== -->
     <div class="notif-panel" id="notif-panel">
       <div class="notif-header">
         <h2>🔔 Notifications</h2>
@@ -563,20 +557,17 @@
 
             <p class="details-description" id="modal-description"></p>
 
-            <!-- EPISODES SECTION -->
             <div class="episodes-section" id="episodes-section" style="display:none;">
               <h3 class="section-title">📺 Episodes</h3>
               <div class="season-selector" id="season-selector"></div>
               <div class="episodes-list" id="episodes-list"></div>
             </div>
 
-            <!-- CAST SECTION -->
             <div class="cast-section" id="cast-section">
               <h3 class="section-title">🎭 Cast</h3>
               <div class="cast-scroll" id="cast-list"></div>
             </div>
 
-            <!-- YOU MAY ALSO LIKE SECTION -->
             <div class="similar-section" id="similar-section">
               <h3 class="section-title">✨ You May Also Like</h3>
               <div class="similar-scroll" id="similar-list"></div>
