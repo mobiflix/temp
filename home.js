@@ -93,14 +93,30 @@ let completedPageState = {};
 // POPSTATE HANDLER
 // ============================================================
 window.addEventListener('popstate', function(e) {
-  document.body.style.overflow = '';
+  // PRIORITY 1: Trailer modal
+  const trailerModal = document.getElementById('trailer-modal');
+  if (trailerModal && trailerModal.classList.contains('open')) {
+    closeTrailer();
 
-  const modal = document.getElementById('modal');
-  if (modal && modal.style.display === 'flex') {
-    modal.style.display = 'none';
+    // Kung may details modal sa likod, ibalik ang overflow
+    const detailsModal = document.getElementById('modal');
+    if (detailsModal && detailsModal.style.display === 'flex') {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
     return;
   }
 
+  // PRIORITY 2: Details modal
+  const modal = document.getElementById('modal');
+  if (modal && modal.style.display === 'flex') {
+    modal.style.display = 'none';
+    document.body.style.overflow = '';
+    return;
+  }
+
+  // PRIORITY 3: Pages
   const openPages = [
     'search-modal', 'more-page', 'my-list-page', 'series-page',
     'movies-page', 'provider-page', 'genre-page', 'ongoing-page',
@@ -112,6 +128,7 @@ window.addEventListener('popstate', function(e) {
       el.classList.remove('open');
       el.scrollTop = 0;
       setActiveNav('home');
+      document.body.style.overflow = '';
       return;
     }
   }
@@ -236,6 +253,9 @@ function playTrailer() {
   iframe.src = `https://www.youtube.com/embed/${currentTrailerKey}?autoplay=1&rel=0`;
   modal.classList.add('open');
   document.body.style.overflow = 'hidden';
+
+  // Magdagdag ng history state para sa trailer
+  history.pushState({ mobiflixTrailer: true }, '');
 }
 
 function closeTrailer() {
@@ -243,7 +263,14 @@ function closeTrailer() {
   const iframe = document.getElementById('trailer-iframe');
   iframe.src = '';
   modal.classList.remove('open');
-  document.body.style.overflow = '';
+
+  // Ibalik ang body overflow depende sa modal state
+  const detailsModal = document.getElementById('modal');
+  if (detailsModal && detailsModal.style.display === 'flex') {
+    document.body.style.overflow = 'hidden';
+  } else {
+    document.body.style.overflow = '';
+  }
 }
 
 // ============================================================
@@ -1152,6 +1179,14 @@ function buildFilterParams(filters, mediaType) {
 // ============================================================
 
 function closeAllPagesOnly() {
+  // Isara muna ang trailer kung bukas
+  const trailerModal = document.getElementById('trailer-modal');
+  if (trailerModal && trailerModal.classList.contains('open')) {
+    const iframe = document.getElementById('trailer-iframe');
+    if (iframe) iframe.src = '';
+    trailerModal.classList.remove('open');
+  }
+
   const pagesToClose = [
     'view-all-page', 'provider-page', 'movies-page', 'series-page',
     'my-list-page', 'more-page', 'search-modal', 'genre-page',
@@ -1922,6 +1957,14 @@ function setActiveNav(name) {
 }
 
 function goHome() {
+  // Isara muna ang trailer
+  const trailerModal = document.getElementById('trailer-modal');
+  if (trailerModal && trailerModal.classList.contains('open')) {
+    const iframe = document.getElementById('trailer-iframe');
+    if (iframe) iframe.src = '';
+    trailerModal.classList.remove('open');
+  }
+
   const modal = document.getElementById('modal');
   if (modal) modal.style.display = 'none';
 
@@ -2277,12 +2320,14 @@ init();
 
 document.addEventListener('keydown', function(e) {
   if (e.key === 'Escape') {
+    // PRIORITY 1: Trailer
     const trailerModal = document.getElementById('trailer-modal');
     if (trailerModal && trailerModal.classList.contains('open')) {
       closeTrailer();
       return;
     }
 
+    // PRIORITY 2: Details modal
     const modal = document.getElementById('modal');
     if (modal && modal.style.display === 'flex') {
       if (history.state && history.state.mobiflixModal) {
@@ -2292,6 +2337,8 @@ document.addEventListener('keydown', function(e) {
       }
       return;
     }
+
+    // PRIORITY 3: Pages
     closeAllPagesOnly();
   }
 });
