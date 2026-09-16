@@ -8,15 +8,15 @@
   <meta http-equiv="Expires" content="0">
   <title>MobiFlix</title>
 
-  <link rel="stylesheet" href="home.css?v=25">
-  <link rel="manifest" href="manifest.json?v=25">
+  <link rel="stylesheet" href="home.css?v=26">
+  <link rel="manifest" href="manifest.json?v=26">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-  <script defer src="auth.js?v=25"></script>
-  <script defer src="home.js?v=25"></script>
+  <script defer src="auth.js?v=26"></script>
+  <script defer src="home.js?v=26"></script>
 
   <script>
     (function() {
-      const CURRENT_VERSION = 'v25';
+      const CURRENT_VERSION = 'v26';
       const CHECK_INTERVAL = 60000;
 
       async function checkForUpdates() {
@@ -26,7 +26,7 @@
           const data = await res.json();
 
           if (data.version && data.version !== CURRENT_VERSION) {
-            console.log('[MobiFlix] Bagong version:', data.version);
+            console.log('[MobiFlix] New version:', data.version);
             if ('caches' in window) {
               const cacheNames = await caches.keys();
               await Promise.all(cacheNames.map(name => caches.delete(name)));
@@ -440,8 +440,8 @@
         <div class="history-grid" id="history-grid"></div>
         <div class="history-empty" id="history-empty" style="display:none;">
           <i class="fa fa-film"></i>
-          <p>Wala ka pang napanood.</p>
-          <p style="font-size: 12px; color: #666; margin-top: 6px;">Start watching para lumabas dito ang history mo.</p>
+          <p>You haven't watched anything yet.</p>
+          <p style="font-size: 12px; color: #666; margin-top: 6px;">Start watching to see your history here.</p>
         </div>
         <button class="clear-history-btn" id="clear-history-btn" onclick="clearHistory()" style="display:none;">
           <i class="fa fa-trash"></i> Clear History
@@ -477,7 +477,7 @@
           <i class="fa fa-bell"></i> Notifications
         </h3>
         <label class="switch-row">
-          <span>Bagong release alerts</span>
+          <span>New release alerts</span>
           <input type="checkbox" id="notif-toggle" onchange="toggleNotifications()" checked>
           <span class="switch"></span>
         </label>
@@ -515,7 +515,7 @@
       <div class="notif-list" id="notif-list"></div>
       <div class="notif-empty" id="notif-empty" style="display:none;">
         <i class="fa fa-bell-slash"></i>
-        <p>Walang notifications.</p>
+        <p>No notifications yet.</p>
       </div>
     </div>
 
