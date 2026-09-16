@@ -13,8 +13,13 @@ const THEME_KEY = 'mobiflix_theme';
 const NOTIF_KEY = 'mobiflix_notifications';
 const NOTIF_ENABLED_KEY = 'mobiflix_notif_enabled';
 const CONTINUE_KEY = 'mobiflix_continue_watching';
+const EPISODE_PROGRESS_KEY = 'mobiflix_episode_progress';
+const AVATAR_KEY = 'mobiflix_avatar';
 const MAX_HISTORY = 30;
 const MAX_CONTINUE = 10;
+
+// ===== AVATAR OPTIONS =====
+const AVATAR_OPTIONS = ['😀', '😎', '🦊', '🐼', '🐯', '🦁', '🐸', '🐵', '🦄', '🐲', '👽', '🤖'];
 
 const INDIAN_LANGS = ['hi', 'ta', 'te', 'ml', 'kn', 'bn', 'mr', 'pa', 'gu', 'or', 'as', 'ur', 'sa', 'ne', 'si'];
 
@@ -77,6 +82,12 @@ const GENRE_LIST = [
 let currentItem;
 let bannerItem;
 let currentTvId = null;
+let currentTrailerKey = null;
+
+// Carousel state
+let carouselMovies = [];
+let carouselIndex = 0;
+let carouselInterval = null;
 
 let viewAllState = { key: null, page: 1, maxPages: 500, loading: false, hasMore: true, initialized: false, seenIds: new Set(), filters: {} };
 let vivamaxPageState = { page: 1, maxPages: 500, loading: false, hasMore: true, initialized: false, seenIds: new Set(), filters: {} };
@@ -203,6 +214,72 @@ async function fetchSimilar(mediaType, id) {
     console.error('[Similar]', err);
     return [];
   }
+}
+
+// ============================================================
+// TRAILER
+// ============================================================
+
+async function fetchTrailer(mediaType, id) {
+  try {
+    const type = mediaType === 'tv' ? 'tv' : 'movie';
+    const res = await fetch(`${BASE_URL}/${type}/${id}/videos?api_key=${API_KEY}`);
+    const data = await res.json();
+    const videos = data.results || [];
+    // Prefer official trailer
+    const trailer = videos.find(function(v) {
+      return v.type === 'Trailer' && v.site === 'YouTube';
+    }) || videos.find(function(v) {
+      return v.site === 'YouTube';
+    });
+    return trailer ? trailer.key : null;
+  } catch (err) {
+    console.error('[Trailer]', err);
+    return null;
+  }
+}
+
+function playTrailer() {
+  if (!currentTrailerKey) return;
+  const modal = document.getElementById('trailer-modal');
+  const iframe = document.getElementById('trailer-iframe');
+  iframe.src = `https://www.youtube.com/embed/${currentTrailerKey}?autoplay=1&rel=0`;
+  modal.classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeTrailer() {
+  const modal = document.getElementById('trailer-modal');
+  const iframe = document.getElementById('trailer-iframe');
+  iframe.src = '';
+  modal.classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+// ============================================================
+// EPISODE PROGRESS
+// ============================================================
+
+function getEpisodeProgress() {
+  try { return JSON.parse(localStorage.getItem(EPISODE_PROGRESS_KEY)) || {}; }
+  catch (e) { return {}; }
+}
+
+function saveEpisodeProgress(progress) {
+  localStorage.setItem(EPISODE_PROGRESS_KEY, JSON.stringify(progress));
+}
+
+function markEpisodeWatched(tvId, seasonNumber, episodeNumber) {
+  const progress = getEpisodeProgress();
+  const key = `${tvId}_s${seasonNumber}e${episodeNumber}`;
+  progress[key] = Date.now();
+  saveEpisodeProgress(progress);
+}
+
+function isEpisodeWatched(tvId, seasonNumber, episodeNumber) {
+  const progress = getEpisodeProgress();
+  const key = `${tvId}_s${seasonNumber}e${episodeNumber}`;
+  return !!progress[key];
 }
 
 // ============================================================
@@ -411,6 +488,62 @@ function updateThemeIcon() {
 }
 
 // ============================================================
+// CUSTOM AVATARS
+// ============================================================
+
+function getAvatar() {
+  return localStorage.getItem(AVATAR_KEY) || '👤';
+}
+
+function setAvatar(emoji) {
+  localStorage.setItem(AVATAR_KEY, emoji);
+  updateAvatarDisplay();
+  // Update active state
+  document.querySelectorAll('.avatar-option').forEach(function(el) {
+    el.classList.remove('active');
+    if (el.dataset.avatar === emoji) el.classList.add('active');
+  });
+}
+
+function updateAvatarDisplay() {
+  const avatarEl = document.getElementById('profile-avatar-display');
+  if (!avatarEl) return;
+  const avatar = getAvatar();
+  if (avatar === '👤' || avatar === '') {
+    avatarEl.className = 'profile-avatar';
+    avatarEl.innerHTML = '<i class="fa fa-user"></i>';
+  } else {
+    avatarEl.className = 'profile-avatar avatar-emoji';
+    avatarEl.textContent = avatar;
+  }
+}
+
+function renderAvatarGrid() {
+  const container = document.getElementById('avatar-grid');
+  if (!container) return;
+  container.innerHTML = '';
+
+  const currentAvatar = getAvatar();
+
+  // Add default user icon option
+  const defaultOption = document.createElement('div');
+  defaultOption.className = 'avatar-option' + (currentAvatar === '👤' ? ' active' : '');
+  defaultOption.dataset.avatar = '👤';
+  defaultOption.innerHTML = '<i class="fa fa-user" style="font-size: 24px;"></i>';
+  defaultOption.onclick = function() { setAvatar('👤'); };
+  container.appendChild(defaultOption);
+
+  AVATAR_OPTIONS.forEach(function(emoji) {
+    const option = document.createElement('div');
+    option.className = 'avatar-option' + (currentAvatar === emoji ? ' active' : '');
+    option.dataset.avatar = emoji;
+    option.textContent = emoji;
+    option.onclick = function() { setAvatar(emoji); };
+    container.appendChild(option);
+  });
+}
+
+// ============================================================
 // NOTIFICATIONS
 // ============================================================
 
@@ -603,6 +736,8 @@ function openUserProfile() {
   const notifToggle = document.getElementById('notif-toggle');
   if (notifToggle) notifToggle.checked = isNotifEnabled();
 
+  renderAvatarGrid();
+  updateAvatarDisplay();
   renderHistory();
   loadTheme();
   setActiveNav('profile');
@@ -696,6 +831,9 @@ async function loadSeasonEpisodes(tvId, seasonNumber) {
   episodes.forEach(function(ep) {
     const episodeItem = document.createElement('div');
     episodeItem.className = 'episode-item';
+    if (isEpisodeWatched(tvId, seasonNumber, ep.episode_number)) {
+      episodeItem.classList.add('watched');
+    }
     episodeItem.onclick = function() {
       playEpisode(tvId, seasonNumber, ep.episode_number);
     };
@@ -755,6 +893,14 @@ function playEpisode(tvId, seasonNumber, episodeNumber) {
   const url = `${ZXCSTREAM_TV}${tvId}/${seasonNumber}/${episodeNumber}`;
   console.log('[MobiFlix Episode]', url);
 
+  // Mark as watched
+  markEpisodeWatched(tvId, seasonNumber, episodeNumber);
+
+  // Update the UI
+  setTimeout(function() {
+    loadSeasonEpisodes(tvId, seasonNumber);
+  }, 500);
+
   if (screen.orientation && screen.orientation.lock) {
     screen.orientation.lock('landscape').catch(function() {});
   }
@@ -763,7 +909,7 @@ function playEpisode(tvId, seasonNumber, episodeNumber) {
 }
 
 // ============================================================
-// DISPLAY FUNCTIONS
+// HERO CAROUSEL
 // ============================================================
 
 function displayBanner(item) {
@@ -790,18 +936,125 @@ function displayBanner(item) {
 
   const descEl = document.getElementById('banner-description');
   if (descEl) descEl.textContent = item.overview || 'No description available.';
+
+  // Update dots
+  updateCarouselDots();
+}
+
+function updateCarouselDots() {
+  const dotsContainer = document.getElementById('hero-dots');
+  if (!dotsContainer) return;
+  dotsContainer.innerHTML = '';
+
+  carouselMovies.forEach(function(_, index) {
+    const dot = document.createElement('button');
+    dot.className = 'hero-dot' + (index === carouselIndex ? ' active' : '');
+    dot.onclick = function() { goToCarouselSlide(index); };
+    dotsContainer.appendChild(dot);
+  });
+}
+
+function goToCarouselSlide(index) {
+  carouselIndex = index;
+  const movie = carouselMovies[index];
+  if (movie) {
+    movie.media_type = movie.media_type || (movie.title ? 'movie' : 'tv');
+    displayBanner(movie);
+  }
+}
+
+function nextCarouselSlide() {
+  if (carouselMovies.length === 0) return;
+  carouselIndex = (carouselIndex + 1) % carouselMovies.length;
+  goToCarouselSlide(carouselIndex);
+}
+
+function startCarousel(movies) {
+  carouselMovies = movies.slice(0, 5);
+  carouselIndex = 0;
+
+  if (carouselMovies.length > 0) {
+    carouselMovies.forEach(function(m) {
+      m.media_type = m.media_type || (m.title ? 'movie' : 'tv');
+    });
+    displayBanner(carouselMovies[0]);
+  }
+
+  // Clear existing interval
+  if (carouselInterval) clearInterval(carouselInterval);
+
+  // Auto-rotate every 6 seconds
+  carouselInterval = setInterval(nextCarouselSlide, 6000);
 }
 
 function playBanner() { if (bannerItem) showDetails(bannerItem); }
 function showBannerDetails() { if (bannerItem) showDetails(bannerItem); }
 
+// ============================================================
+// PARALLAX SCROLLING
+// ============================================================
+
+let parallaxTicking = false;
+
+window.addEventListener('scroll', function() {
+  if (parallaxTicking) return;
+  parallaxTicking = true;
+
+  requestAnimationFrame(function() {
+    const banner = document.getElementById('banner');
+    if (banner) {
+      const scrolled = window.pageYOffset;
+      if (scrolled < window.innerHeight) {
+        banner.style.transform = `translateY(${scrolled * 0.4}px)`;
+        banner.style.opacity = Math.max(0, 1 - scrolled / 700);
+      }
+    }
+    parallaxTicking = false;
+  });
+});
+
+// ============================================================
+// RANDOM MOVIE
+// ============================================================
+
+async function openRandomMovie() {
+  try {
+    // Get random movie from popular or trending
+    const randomPage = Math.floor(Math.random() * 5) + 1;
+    const res = await fetch(`${BASE_URL}/movie/popular?api_key=${API_KEY}&page=${randomPage}`);
+    const data = await res.json();
+    const filtered = filterNonIndian(data.results).filter(function(m) {
+      return m.poster_path;
+    });
+
+    if (filtered.length === 0) {
+      alert('No movies found. Try again.');
+      return;
+    }
+
+    const randomIndex = Math.floor(Math.random() * filtered.length);
+    const movie = filtered[randomIndex];
+    movie.media_type = 'movie';
+
+    console.log('[MobiFlix] Random Movie:', movie.title);
+    showDetails(movie);
+  } catch (err) {
+    console.error('[Random Movie]', err);
+    alert('Failed to load random movie. Please try again.');
+  }
+}
+
+// ============================================================
+// DISPLAY FUNCTIONS
+// ============================================================
+
 function appendToList(items, containerId) {
   const container = document.getElementById(containerId);
   if (!container) return;
+  container.innerHTML = '';
+
   items.forEach(item => {
     if (!item.poster_path) return;
-    const existing = container.querySelector(`img[data-id="${item.id}"]`);
-    if (existing) return;
     const img = document.createElement('img');
     img.src = `${IMG_W500}${item.poster_path}`;
     img.alt = item.title || item.name;
@@ -887,7 +1140,7 @@ function renderGenresInMore() {
 }
 
 // ============================================================
-// FILTERS (UNIFIED)
+// FILTERS
 // ============================================================
 
 const FILTER_PANEL_MAP = {
@@ -1540,9 +1793,15 @@ async function showDetails(item) {
   const mediaType = item.media_type || (item.title ? 'movie' : 'tv');
   const itemId = item.id;
 
+  // Hide trailer button initially
+  const trailerBtn = document.getElementById('btn-trailer');
+  if (trailerBtn) trailerBtn.style.display = 'none';
+  currentTrailerKey = null;
+
   const promises = [
     fetchCredits(mediaType, itemId),
-    fetchSimilar(mediaType, itemId)
+    fetchSimilar(mediaType, itemId),
+    fetchTrailer(mediaType, itemId)
   ];
 
   if (mediaType === 'tv') {
@@ -1551,12 +1810,18 @@ async function showDetails(item) {
     document.getElementById('episodes-section').style.display = 'none';
   }
 
-  const [cast, similar] = await Promise.all(promises);
+  const [cast, similar, trailerKey] = await Promise.all(promises);
 
   if (currentItem && currentItem.id !== itemId) return;
 
   renderCast(cast);
   renderSimilar(similar, mediaType);
+
+  // Show trailer button if available
+  if (trailerKey) {
+    currentTrailerKey = trailerKey;
+    if (trailerBtn) trailerBtn.style.display = 'flex';
+  }
 
   renderContinueWatching();
 }
@@ -2155,8 +2420,7 @@ async function init() {
     ]);
 
     if (moviesData.results.length > 0) {
-      const randomIndex = Math.floor(Math.random() * Math.min(5, moviesData.results.length));
-      displayBanner(moviesData.results[randomIndex]);
+      startCarousel(moviesData.results);
     }
 
     renderTop10(moviesData.results, 'top10-movies');
@@ -2187,6 +2451,12 @@ init();
 
 document.addEventListener('keydown', function(e) {
   if (e.key === 'Escape') {
+    const trailerModal = document.getElementById('trailer-modal');
+    if (trailerModal && trailerModal.classList.contains('open')) {
+      closeTrailer();
+      return;
+    }
+
     const modal = document.getElementById('modal');
     if (modal && modal.style.display === 'flex') {
       if (history.state && history.state.mobiflixModal) {
