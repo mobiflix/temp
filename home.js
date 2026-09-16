@@ -77,7 +77,6 @@ let completedPageState = {};
 // POPSTATE HANDLER
 // ============================================================
 window.addEventListener('popstate', function(e) {
-  // IMPORTANT: Laging i-reset ang body overflow
   document.body.style.overflow = '';
 
   const modal = document.getElementById('modal');
@@ -320,7 +319,6 @@ function closeAllPagesOnly() {
       el.scrollTop = 0;
     }
   });
-  // Laging i-reset ang body overflow
   document.body.style.overflow = '';
 }
 
@@ -774,7 +772,7 @@ function toggleAddToList() {
 }
 
 // ============================================================
-// PLAY NOW — BUBUKAS SA BAGONG TAB (with orientation lock)
+// PLAY NOW — BUBUKAS SA BAGONG TAB
 // ============================================================
 
 function playNow() {
@@ -855,7 +853,7 @@ async function fetchFullDetails(id, mediaType) {
 }
 
 // ============================================================
-// SEARCH
+// SEARCH — PINABUTI (region=PH, include_adult=true, separate movie+tv)
 // ============================================================
 
 function openSearchModal() {
@@ -881,25 +879,56 @@ async function searchTMDB() {
   }
 
   searchTimeout = setTimeout(async () => {
-    const res = await fetch(`${BASE_URL}/search/multi?api_key=${API_KEY}&query=${encodeURIComponent(query)}`);
-    const data = await res.json();
-    const filtered = filterNonIndian(data.results).filter(function(item) {
-      if (!item.poster_path) return false;
-      return item.media_type === 'movie' || item.media_type === 'tv';
-    });
+    try {
+      // Search movies AND TV shows separately para mas maraming results
+      const [movieRes, tvRes] = await Promise.all([
+        fetch(`${BASE_URL}/search/movie?api_key=${API_KEY}&query=${encodeURIComponent(query)}&include_adult=true&region=PH&language=en-US`),
+        fetch(`${BASE_URL}/search/tv?api_key=${API_KEY}&query=${encodeURIComponent(query)}&include_adult=true&language=en-US`)
+      ]);
 
-    const container = document.getElementById('search-results');
-    container.innerHTML = '';
-    filtered.forEach(function(item) {
-      const img = document.createElement('img');
-      img.src = `${IMG_W500}${item.poster_path}`;
-      img.alt = item.title || item.name;
-      img.onclick = function() {
-        closeSearchModal();
-        showDetails(item);
-      };
-      container.appendChild(img);
-    });
+      const movieData = await movieRes.json();
+      const tvData = await tvRes.json();
+
+      // Combine and label media_type
+      const movies = (movieData.results || []).map(function(m) {
+        m.media_type = 'movie';
+        return m;
+      });
+      const tvs = (tvData.results || []).map(function(t) {
+        t.media_type = 'tv';
+        return t;
+      });
+
+      // Combine, filter, sort by popularity
+      const combined = [...movies, ...tvs]
+        .filter(function(item) {
+          return item.poster_path && !INDIAN_LANGS.includes(item.original_language);
+        })
+        .sort(function(a, b) {
+          return (b.popularity || 0) - (a.popularity || 0);
+        });
+
+      const container = document.getElementById('search-results');
+      container.innerHTML = '';
+
+      if (combined.length === 0) {
+        container.innerHTML = '<div style="color:#666;padding:40px 20px;text-align:center;grid-column:1/-1;">No results found.</div>';
+        return;
+      }
+
+      combined.forEach(function(item) {
+        const img = document.createElement('img');
+        img.src = `${IMG_W500}${item.poster_path}`;
+        img.alt = item.title || item.name;
+        img.onclick = function() {
+          closeSearchModal();
+          showDetails(item);
+        };
+        container.appendChild(img);
+      });
+    } catch (err) {
+      console.error('[Search]', err);
+    }
   }, 300);
 }
 
