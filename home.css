@@ -2248,3 +2248,157 @@ body.locked { overflow: hidden; }
   .trailer-modal { padding: 10px; }
   .trailer-close-btn { top: -45px; width: 38px; height: 38px; }
   }
+/* ===== TRAILER BUTTON ===== */
+.btn-trailer {
+  flex: 1;
+  max-width: 220px;
+  min-width: 150px;
+  padding: 14px 28px;
+  border: 1px solid rgba(229,9,20,0.5);
+  border-radius: 8px;
+  background: rgba(229,9,20,0.15);
+  color: #ff6b6b;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+.btn-trailer:hover {
+  background: #e50914;
+  color: #fff;
+  border-color: #e50914;
+  transform: scale(1.02);
+}
+
+/* ===== TRAILER MODAL ===== */
+.trailer-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.95);
+  backdrop-filter: blur(10px);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 900;
+  padding: 20px;
+}
+
+.trailer-modal.open { display: flex; }
+
+.trailer-content {
+  position: relative;
+  width: 100%;
+  max-width: 1000px;
+  animation: trailerIn 0.3s ease;
+}
+
+@keyframes trailerIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.trailer-close-btn {
+  position: absolute;
+  top: -50px;
+  right: 0;
+  background: rgba(255,255,255,0.1);
+  border: 1px solid rgba(255,255,255,0.2);
+  color: #fff;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+}
+.trailer-close-btn:hover {
+  background: #e50914;
+  border-color: #e50914;
+  transform: scale(1.1);
+}
+
+.trailer-wrapper {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background: #000;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 20px 80px rgba(0,0,0,0.9);
+}
+
+.trailer-wrapper iframe {
+  width: 100%;
+  height: 100%;
+  border: none;
+}
+
+/* ===== EPISODE PROGRESS ===== */
+.episode-item {
+  position: relative;
+}
+
+.episode-item.watched::after {
+  content: '✓';
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: #22c55e;
+  color: #fff;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: bold;
+  box-shadow: 0 0 10px rgba(34,197,94,0.5);
+  z-index: 2;
+}
+
+.episode-item.watched .episode-number::after {
+  content: ' • Watched';
+  color: #22c55e;
+  font-size: 10px;
+}
+
+.episode-item.watched {
+  border-color: rgba(34,197,94,0.3);
+}
+
+.episode-item.watched:hover {
+  border-color: rgba(34,197,94,0.6);
+}
+
+/* ===== FIX: FILTERS Z-INDEX ===== */
+.view-all-header {
+  z-index: 100;
+}
+
+.filter-btn {
+  position: relative;
+  z-index: 20;
+  pointer-events: auto;
+}
+
+.filter-panel {
+  position: relative;
+  z-index: 50;
+}
+
+@media (max-width: 768px) {
+  .btn-trailer {
+    padding: 12px 20px;
+    font-size: 15px;
+    max-width: 180px;
+  }
+  .trailer-modal { padding: 10px; }
+  .trailer-close-btn { top: -45px; width: 38px; height: 38px; }
+}
