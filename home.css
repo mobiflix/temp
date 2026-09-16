@@ -509,7 +509,7 @@ body {
   display: flex;
   align-items: center;
   gap: 20px;
-  z-index: 10;
+  z-index: 100;
   border-bottom: 1px solid rgba(255,255,255,0.06);
   margin-bottom: 24px;
 }
@@ -748,6 +748,32 @@ body {
   transform: scale(1.02);
 }
 
+/* ===== TRAILER BUTTON ===== */
+.btn-trailer {
+  flex: 1;
+  max-width: 220px;
+  min-width: 150px;
+  padding: 14px 28px;
+  border: 1px solid rgba(229,9,20,0.5);
+  border-radius: 8px;
+  background: rgba(229,9,20,0.15);
+  color: #ff6b6b;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+.btn-trailer:hover {
+  background: #e50914;
+  color: #fff;
+  border-color: #e50914;
+  transform: scale(1.02);
+}
+
 .btn-add-list {
   flex: 1;
   max-width: 220px;
@@ -849,6 +875,7 @@ body {
   cursor: pointer;
   transition: 0.25s;
   align-items: center;
+  position: relative;
 }
 .episode-item:hover {
   background: rgba(255,255,255,0.08);
@@ -923,6 +950,40 @@ body {
   color: #666;
   padding: 20px;
   font-size: 14px;
+}
+
+/* ===== EPISODE PROGRESS ===== */
+.episode-item.watched::after {
+  content: '✓';
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: #22c55e;
+  color: #fff;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: bold;
+  box-shadow: 0 0 10px rgba(34,197,94,0.5);
+  z-index: 2;
+}
+
+.episode-item.watched .episode-number::after {
+  content: ' • Watched';
+  color: #22c55e;
+  font-size: 10px;
+}
+
+.episode-item.watched {
+  border-color: rgba(34,197,94,0.3);
+}
+
+.episode-item.watched:hover {
+  border-color: rgba(34,197,94,0.6);
 }
 
 /* ===== CAST SECTION ===== */
@@ -1025,6 +1086,71 @@ body {
 .similar-scroll img:hover {
   transform: scale(1.05);
   box-shadow: 0 8px 30px rgba(229,9,20,0.3);
+}
+
+/* ===== TRAILER MODAL ===== */
+.trailer-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.95);
+  backdrop-filter: blur(10px);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 900;
+  padding: 20px;
+}
+
+.trailer-modal.open { display: flex; }
+
+.trailer-content {
+  position: relative;
+  width: 100%;
+  max-width: 1000px;
+  animation: trailerIn 0.3s ease;
+}
+
+@keyframes trailerIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.trailer-close-btn {
+  position: absolute;
+  top: -50px;
+  right: 0;
+  background: rgba(255,255,255,0.1);
+  border: 1px solid rgba(255,255,255,0.2);
+  color: #fff;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+}
+.trailer-close-btn:hover {
+  background: #e50914;
+  border-color: #e50914;
+  transform: scale(1.1);
+}
+
+.trailer-wrapper {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background: #000;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 20px 80px rgba(0,0,0,0.9);
+}
+
+.trailer-wrapper iframe {
+  width: 100%;
+  height: 100%;
+  border: none;
 }
 
 /* ===== USER PROFILE PAGE ===== */
@@ -1292,6 +1418,9 @@ body {
   align-items: center;
   gap: 6px;
   white-space: nowrap;
+  position: relative;
+  z-index: 20;
+  pointer-events: auto;
 }
 .filter-btn:hover {
   background: #e50914;
@@ -1306,6 +1435,8 @@ body {
   padding: 18px;
   margin-bottom: 20px;
   animation: filterSlide 0.3s ease;
+  position: relative;
+  z-index: 50;
 }
 @keyframes filterSlide {
   from { opacity: 0; transform: translateY(-10px); }
@@ -2020,7 +2151,7 @@ body.locked { overflow: hidden; }
   .details-year, .details-runtime { font-size: 14px; }
   .details-description { font-size: 14px; }
   .details-buttons { gap: 10px; margin-bottom: 18px; }
-  .btn-play-now, .btn-add-list {
+  .btn-play-now, .btn-add-list, .btn-trailer {
     padding: 12px 20px;
     font-size: 15px;
     max-width: 180px;
@@ -2075,6 +2206,9 @@ body.locked { overflow: hidden; }
   .switch-row span:first-child { font-size: 13px; }
 
   .section-title { font-size: 16px; }
+
+  .trailer-modal { padding: 10px; }
+  .trailer-close-btn { top: -45px; width: 38px; height: 38px; }
 }
 
 @media (max-width: 480px) {
@@ -2109,296 +2243,4 @@ body.locked { overflow: hidden; }
   .continue-card { width: 150px; }
   .continue-title { font-size: 11px; }
   .continue-subtitle { font-size: 10px; }
-}
-/* ===== TRAILER BUTTON ===== */
-.btn-trailer {
-  flex: 1;
-  max-width: 220px;
-  min-width: 150px;
-  padding: 14px 28px;
-  border: 1px solid rgba(229,9,20,0.5);
-  border-radius: 8px;
-  background: rgba(229,9,20,0.15);
-  color: #ff6b6b;
-  font-size: 16px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: 0.2s;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-}
-.btn-trailer:hover {
-  background: #e50914;
-  color: #fff;
-  border-color: #e50914;
-  transform: scale(1.02);
-}
-
-/* ===== TRAILER MODAL ===== */
-.trailer-modal {
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,0.95);
-  backdrop-filter: blur(10px);
-  display: none;
-  align-items: center;
-  justify-content: center;
-  z-index: 900;
-  padding: 20px;
-}
-
-.trailer-modal.open { display: flex; }
-
-.trailer-content {
-  position: relative;
-  width: 100%;
-  max-width: 1000px;
-  animation: trailerIn 0.3s ease;
-}
-
-@keyframes trailerIn {
-  from { opacity: 0; transform: scale(0.95); }
-  to { opacity: 1; transform: scale(1); }
-}
-
-.trailer-close-btn {
-  position: absolute;
-  top: -50px;
-  right: 0;
-  background: rgba(255,255,255,0.1);
-  border: 1px solid rgba(255,255,255,0.2);
-  color: #fff;
-  width: 42px;
-  height: 42px;
-  border-radius: 50%;
-  cursor: pointer;
-  transition: 0.2s;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 18px;
-}
-.trailer-close-btn:hover {
-  background: #e50914;
-  border-color: #e50914;
-  transform: scale(1.1);
-}
-
-.trailer-wrapper {
-  width: 100%;
-  aspect-ratio: 16 / 9;
-  background: #000;
-  border-radius: 12px;
-  overflow: hidden;
-  box-shadow: 0 20px 80px rgba(0,0,0,0.9);
-}
-
-.trailer-wrapper iframe {
-  width: 100%;
-  height: 100%;
-  border: none;
-}
-
-/* ===== EPISODE PROGRESS ===== */
-.episode-item {
-  position: relative;
-}
-
-.episode-item.watched::after {
-  content: '✓';
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  background: #22c55e;
-  color: #fff;
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 11px;
-  font-weight: bold;
-  box-shadow: 0 0 10px rgba(34,197,94,0.5);
-  z-index: 2;
-}
-
-.episode-item.watched .episode-number::after {
-  content: ' • Watched';
-  color: #22c55e;
-  font-size: 10px;
-}
-
-.episode-item.watched {
-  border-color: rgba(34,197,94,0.3);
-}
-
-.episode-item.watched:hover {
-  border-color: rgba(34,197,94,0.6);
-}
-
-@media (max-width: 768px) {
-  .btn-trailer {
-    padding: 12px 20px;
-    font-size: 15px;
-    max-width: 180px;
-  }
-  .trailer-modal { padding: 10px; }
-  .trailer-close-btn { top: -45px; width: 38px; height: 38px; }
-  }
-/* ===== TRAILER BUTTON ===== */
-.btn-trailer {
-  flex: 1;
-  max-width: 220px;
-  min-width: 150px;
-  padding: 14px 28px;
-  border: 1px solid rgba(229,9,20,0.5);
-  border-radius: 8px;
-  background: rgba(229,9,20,0.15);
-  color: #ff6b6b;
-  font-size: 16px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: 0.2s;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-}
-.btn-trailer:hover {
-  background: #e50914;
-  color: #fff;
-  border-color: #e50914;
-  transform: scale(1.02);
-}
-
-/* ===== TRAILER MODAL ===== */
-.trailer-modal {
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,0.95);
-  backdrop-filter: blur(10px);
-  display: none;
-  align-items: center;
-  justify-content: center;
-  z-index: 900;
-  padding: 20px;
-}
-
-.trailer-modal.open { display: flex; }
-
-.trailer-content {
-  position: relative;
-  width: 100%;
-  max-width: 1000px;
-  animation: trailerIn 0.3s ease;
-}
-
-@keyframes trailerIn {
-  from { opacity: 0; transform: scale(0.95); }
-  to { opacity: 1; transform: scale(1); }
-}
-
-.trailer-close-btn {
-  position: absolute;
-  top: -50px;
-  right: 0;
-  background: rgba(255,255,255,0.1);
-  border: 1px solid rgba(255,255,255,0.2);
-  color: #fff;
-  width: 42px;
-  height: 42px;
-  border-radius: 50%;
-  cursor: pointer;
-  transition: 0.2s;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 18px;
-}
-.trailer-close-btn:hover {
-  background: #e50914;
-  border-color: #e50914;
-  transform: scale(1.1);
-}
-
-.trailer-wrapper {
-  width: 100%;
-  aspect-ratio: 16 / 9;
-  background: #000;
-  border-radius: 12px;
-  overflow: hidden;
-  box-shadow: 0 20px 80px rgba(0,0,0,0.9);
-}
-
-.trailer-wrapper iframe {
-  width: 100%;
-  height: 100%;
-  border: none;
-}
-
-/* ===== EPISODE PROGRESS ===== */
-.episode-item {
-  position: relative;
-}
-
-.episode-item.watched::after {
-  content: '✓';
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  background: #22c55e;
-  color: #fff;
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 11px;
-  font-weight: bold;
-  box-shadow: 0 0 10px rgba(34,197,94,0.5);
-  z-index: 2;
-}
-
-.episode-item.watched .episode-number::after {
-  content: ' • Watched';
-  color: #22c55e;
-  font-size: 10px;
-}
-
-.episode-item.watched {
-  border-color: rgba(34,197,94,0.3);
-}
-
-.episode-item.watched:hover {
-  border-color: rgba(34,197,94,0.6);
-}
-
-/* ===== FIX: FILTERS Z-INDEX ===== */
-.view-all-header {
-  z-index: 100;
-}
-
-.filter-btn {
-  position: relative;
-  z-index: 20;
-  pointer-events: auto;
-}
-
-.filter-panel {
-  position: relative;
-  z-index: 50;
-}
-
-@media (max-width: 768px) {
-  .btn-trailer {
-    padding: 12px 20px;
-    font-size: 15px;
-    max-width: 180px;
-  }
-  .trailer-modal { padding: 10px; }
-  .trailer-close-btn { top: -45px; width: 38px; height: 38px; }
 }
