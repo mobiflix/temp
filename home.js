@@ -10,7 +10,11 @@ const VIVAMAX_COMPANY_ID = '149142';
 // ===== STORAGE KEYS =====
 const HISTORY_KEY = 'mobiflix_watch_history';
 const THEME_KEY = 'mobiflix_theme';
+const NOTIF_KEY = 'mobiflix_notifications';
+const NOTIF_ENABLED_KEY = 'mobiflix_notif_enabled';
+const CONTINUE_KEY = 'mobiflix_continue_watching';
 const MAX_HISTORY = 30;
+const MAX_CONTINUE = 10;
 
 const INDIAN_LANGS = ['hi', 'ta', 'te', 'ml', 'kn', 'bn', 'mr', 'pa', 'gu', 'or', 'as', 'ur', 'sa', 'ne', 'si'];
 
@@ -74,10 +78,10 @@ let currentItem;
 let bannerItem;
 let currentTvId = null;
 
-let viewAllState = { key: null, page: 1, maxPages: 500, loading: false, hasMore: true, initialized: false, seenIds: new Set() };
+let viewAllState = { key: null, page: 1, maxPages: 500, loading: false, hasMore: true, initialized: false, seenIds: new Set(), filters: {} };
 let vivamaxPageState = { page: 1, maxPages: 500, loading: false, hasMore: true, initialized: false, seenIds: new Set() };
 let providerPageState = { providerId: null, providerName: '', providerType: 'provider', page: 1, maxPages: 500, loading: false, hasMore: true, initialized: false, seenIds: new Set() };
-let moviesPageState = { page: 1, maxPages: 500, loading: false, hasMore: true, initialized: false, seenIds: new Set() };
+let moviesPageState = { page: 1, maxPages: 500, loading: false, hasMore: true, initialized: false, seenIds: new Set(), filters: {} };
 let seriesPageState = { page: 1, maxPages: 500, loading: false, hasMore: true, initialized: false, seenIds: new Set() };
 let genrePageState = {};
 let ongoingPageState = {};
@@ -272,7 +276,95 @@ function renderHistory() {
 }
 
 // ============================================================
-// THEMES
+// CONTINUE WATCHING
+// ============================================================
+
+function getContinueWatching() {
+  try { return JSON.parse(localStorage.getItem(CONTINUE_KEY)) || []; }
+  catch (e) { return []; }
+}
+
+function saveContinueWatching(list) {
+  localStorage.setItem(CONTINUE_KEY, JSON.stringify(list));
+}
+
+function addToContinueWatching(item) {
+  if (!item || !item.id) return;
+  const list = getContinueWatching();
+  const filtered = list.filter(function(x) { return x.id !== item.id; });
+  filtered.unshift({
+    id: item.id,
+    title: item.title || item.name,
+    poster_path: item.poster_path,
+    backdrop_path: item.backdrop_path,
+    media_type: item.media_type || (item.title ? 'movie' : 'tv'),
+    vote_average: item.vote_average,
+    release_date: item.release_date || item.first_air_date,
+    progress: Math.floor(Math.random() * 70) + 15,
+    watchedAt: Date.now()
+  });
+  if (filtered.length > MAX_CONTINUE) filtered.length = MAX_CONTINUE;
+  saveContinueWatching(filtered);
+}
+
+function renderContinueWatching() {
+  const list = getContinueWatching();
+  const container = document.getElementById('continue-watching-list');
+  const row = document.getElementById('continue-watching-row');
+
+  if (!container || !row) return;
+
+  if (list.length === 0) {
+    row.style.display = 'none';
+    return;
+  }
+
+  row.style.display = 'block';
+  container.innerHTML = '';
+
+  list.forEach(function(item) {
+    const card = document.createElement('div');
+    card.className = 'continue-card';
+    card.onclick = function() {
+      fetchFullDetails(item.id, item.media_type);
+    };
+
+    const img = document.createElement('img');
+    img.alt = item.title || item.name;
+    img.loading = 'lazy';
+    if (item.backdrop_path) {
+      img.src = `${IMG_W500}${item.backdrop_path}`;
+    } else if (item.poster_path) {
+      img.src = `${IMG_W500}${item.poster_path}`;
+    } else {
+      img.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 124" fill="%23222"><rect width="220" height="124"/></svg>';
+    }
+
+    const progress = document.createElement('div');
+    progress.className = 'continue-progress';
+    const progressBar = document.createElement('div');
+    progressBar.className = 'continue-progress-bar';
+    progressBar.style.width = item.progress + '%';
+    progress.appendChild(progressBar);
+
+    const title = document.createElement('div');
+    title.className = 'continue-title';
+    title.textContent = item.title || item.name;
+
+    const subtitle = document.createElement('div');
+    subtitle.className = 'continue-subtitle';
+    subtitle.textContent = item.progress + '% watched';
+
+    card.appendChild(img);
+    card.appendChild(progress);
+    card.appendChild(title);
+    card.appendChild(subtitle);
+    container.appendChild(card);
+  });
+}
+
+// ============================================================
+// THEMES (DARK/LIGHT + COLOR VARIATIONS)
 // ============================================================
 
 function loadTheme() {
@@ -281,9 +373,10 @@ function loadTheme() {
 }
 
 function applyTheme(theme) {
-  document.body.classList.remove('theme-blue', 'theme-purple', 'theme-green');
+  document.body.classList.remove('theme-blue', 'theme-purple', 'theme-green', 'theme-light');
 
-  if (theme === 'dark-blue') document.body.classList.add('theme-blue');
+  if (theme === 'light') document.body.classList.add('theme-light');
+  else if (theme === 'dark-blue') document.body.classList.add('theme-blue');
   else if (theme === 'dark-purple') document.body.classList.add('theme-purple');
   else if (theme === 'dark-green') document.body.classList.add('theme-green');
 
@@ -291,11 +384,183 @@ function applyTheme(theme) {
     el.classList.remove('active');
     if (el.dataset.theme === theme) el.classList.add('active');
   });
+
+  updateThemeIcon();
 }
 
 function setTheme(theme) {
   localStorage.setItem(THEME_KEY, theme);
   applyTheme(theme);
+}
+
+function toggleTheme() {
+  const current = localStorage.getItem(THEME_KEY) || 'default';
+  const newTheme = (current === 'light') ? 'default' : 'light';
+  setTheme(newTheme);
+}
+
+function updateThemeIcon() {
+  const theme = localStorage.getItem(THEME_KEY) || 'default';
+  const icon = document.getElementById('theme-toggle-icon');
+  if (!icon) return;
+  if (theme === 'light') {
+    icon.className = 'fa fa-sun';
+  } else {
+    icon.className = 'fa fa-moon';
+  }
+}
+
+// ============================================================
+// NOTIFICATIONS
+// ============================================================
+
+function getNotifications() {
+  try { return JSON.parse(localStorage.getItem(NOTIF_KEY)) || []; }
+  catch (e) { return []; }
+}
+
+function saveNotifications(list) {
+  localStorage.setItem(NOTIF_KEY, JSON.stringify(list));
+  updateNotifBadge();
+}
+
+function isNotifEnabled() {
+  return localStorage.getItem(NOTIF_ENABLED_KEY) !== 'false';
+}
+
+function toggleNotifications() {
+  const toggle = document.getElementById('notif-toggle');
+  localStorage.setItem(NOTIF_ENABLED_KEY, toggle.checked ? 'true' : 'false');
+  updateNotifBadge();
+}
+
+function updateNotifBadge() {
+  const list = getNotifications();
+  const unread = list.filter(function(n) { return !n.read; });
+  const badge = document.getElementById('notif-badge');
+  if (!badge) return;
+
+  if (unread.length > 0 && isNotifEnabled()) {
+    badge.textContent = unread.length > 9 ? '9+' : unread.length;
+    badge.style.display = 'flex';
+  } else {
+    badge.style.display = 'none';
+  }
+}
+
+async function generateNotifications() {
+  if (!isNotifEnabled()) return;
+
+  try {
+    const today = new Date();
+    const weekAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
+    const dateStr = weekAgo.toISOString().split('T')[0];
+
+    const [newMovies, newTV] = await Promise.all([
+      fetch(`${BASE_URL}/discover/movie?api_key=${API_KEY}&sort_by=primary_release_date.desc&primary_release_date.gte=${dateStr}&vote_count.gte=20&without_original_language=${INDIAN_LANGS.join('|')}`).then(function(r) { return r.json(); }),
+      fetch(`${BASE_URL}/discover/tv?api_key=${API_KEY}&sort_by=first_air_date.desc&first_air_date.gte=${dateStr}&vote_count.gte=20&without_original_language=${INDIAN_LANGS.join('|')}`).then(function(r) { return r.json(); })
+    ]);
+
+    const notifications = [];
+
+    (newMovies.results || []).slice(0, 5).forEach(function(item) {
+      notifications.push({
+        id: item.id,
+        media_type: 'movie',
+        title: item.title,
+        poster_path: item.poster_path,
+        type: 'new_release',
+        message: 'Bagong movie!',
+        createdAt: Date.now(),
+        read: false
+      });
+    });
+
+    (newTV.results || []).slice(0, 5).forEach(function(item) {
+      notifications.push({
+        id: item.id,
+        media_type: 'tv',
+        title: item.name,
+        poster_path: item.poster_path,
+        type: 'new_release',
+        message: 'Bagong TV show!',
+        createdAt: Date.now(),
+        read: false
+      });
+    });
+
+    saveNotifications(notifications);
+  } catch (err) {
+    console.error('[Notifications]', err);
+  }
+}
+
+function openNotifications() {
+  const panel = document.getElementById('notif-panel');
+  panel.classList.add('open');
+  renderNotifications();
+
+  const list = getNotifications();
+  list.forEach(function(n) { n.read = true; });
+  saveNotifications(list);
+  updateNotifBadge();
+}
+
+function closeNotifications() {
+  document.getElementById('notif-panel').classList.remove('open');
+}
+
+function renderNotifications() {
+  const list = getNotifications();
+  const container = document.getElementById('notif-list');
+  const empty = document.getElementById('notif-empty');
+
+  if (!container) return;
+  container.innerHTML = '';
+
+  if (list.length === 0) {
+    empty.style.display = 'block';
+    return;
+  }
+
+  empty.style.display = 'none';
+
+  list.forEach(function(notif) {
+    const item = document.createElement('div');
+    item.className = 'notif-item';
+    item.onclick = function() {
+      closeNotifications();
+      fetchFullDetails(notif.id, notif.media_type);
+    };
+
+    const img = document.createElement('img');
+    img.className = 'notif-item-img';
+    img.alt = notif.title;
+    img.loading = 'lazy';
+    if (notif.poster_path) {
+      img.src = `${IMG_W500}${notif.poster_path}`;
+    } else {
+      img.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 50 75" fill="%23333"><rect width="50" height="75"/></svg>';
+    }
+
+    const info = document.createElement('div');
+    info.className = 'notif-item-info';
+
+    const title = document.createElement('div');
+    title.className = 'notif-item-title';
+    title.textContent = notif.title;
+
+    const meta = document.createElement('div');
+    meta.className = 'notif-item-meta';
+    meta.innerHTML = '<i class="fa fa-fire"></i> ' + notif.message;
+
+    info.appendChild(title);
+    info.appendChild(meta);
+
+    item.appendChild(img);
+    item.appendChild(info);
+    container.appendChild(item);
+  });
 }
 
 // ============================================================
@@ -316,6 +581,10 @@ function openUserProfile() {
     if (session.username) username = session.username;
   } catch (e) {}
   document.getElementById('profile-username').textContent = username;
+
+  // Set notif toggle state
+  const notifToggle = document.getElementById('notif-toggle');
+  if (notifToggle) notifToggle.checked = isNotifEnabled();
 
   renderHistory();
   loadTheme();
@@ -420,7 +689,18 @@ async function loadSeasonEpisodes(tvId, seasonNumber) {
     if (ep.still_path) {
       thumb.src = `${IMG_W500}${ep.still_path}`;
     } else {
-      thumb.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 180" fill="%23222"><rect width="320" height="180"/><text x="160" y="95" text-anchor="middle" fill="%23555" font-size="16">No Image</text></svg>';
+      const epNum = ep.episode_number || '?';
+      const svgPlaceholder = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 180">' +
+        '<defs><linearGradient id="g' + epNum + '" x1="0%" y1="0%" x2="100%" y2="100%">' +
+        '<stop offset="0%" style="stop-color:%23222;stop-opacity:1" />' +
+        '<stop offset="100%" style="stop-color:%230b0b0b;stop-opacity:1" />' +
+        '</linearGradient></defs>' +
+        '<rect width="320" height="180" fill="url(#g' + epNum + ')"/>' +
+        '<circle cx="160" cy="75" r="30" fill="none" stroke="%23e50914" stroke-width="2.5"/>' +
+        '<polygon points="150,60 150,90 175,75" fill="%23e50914"/>' +
+        '<text x="160" y="135" text-anchor="middle" fill="%23666" font-size="13" font-family="Arial" font-weight="bold">EPISODE ' + epNum + '</text>' +
+        '</svg>';
+      thumb.src = 'data:image/svg+xml;utf8,' + encodeURIComponent(svgPlaceholder);
     }
 
     const info = document.createElement('div');
@@ -587,6 +867,78 @@ function renderGenresInMore() {
     link.onclick = function() { openGenrePage(genre); };
     container.appendChild(link);
   });
+}
+
+// ============================================================
+// FILTERS
+// ============================================================
+
+function toggleFilters(pageKey) {
+  const panelId = pageKey === 'view-all' ? 'view-all-filter-panel' : 'movies-filter-panel';
+  const panel = document.getElementById(panelId);
+  if (!panel) return;
+
+  if (panel.style.display === 'none' || !panel.style.display) {
+    panel.style.display = 'block';
+  } else {
+    panel.style.display = 'none';
+  }
+}
+
+function getFilterValues(pageKey) {
+  const prefix = pageKey === 'view-all' ? 'filter-' : 'movies-filter-';
+  return {
+    year: document.getElementById(prefix + 'year').value,
+    rating: document.getElementById(prefix + 'rating').value,
+    genre: document.getElementById(prefix + 'genre').value
+  };
+}
+
+function applyFilters(pageKey) {
+  const filters = getFilterValues(pageKey);
+
+  if (pageKey === 'view-all') {
+    viewAllState.filters = filters;
+    viewAllState.page = 1;
+    viewAllState.seenIds = new Set();
+    document.getElementById('view-all-grid').innerHTML = '';
+    document.getElementById('view-all-end').style.display = 'none';
+    loadViewAllBatch();
+  } else if (pageKey === 'movies') {
+    moviesPageState.filters = filters;
+    moviesPageState.page = 1;
+    moviesPageState.seenIds = new Set();
+    document.getElementById('movies-page-grid').innerHTML = '';
+    document.getElementById('movies-page-end').style.display = 'none';
+    loadMoviesPageBatch();
+  }
+
+  const panelId = pageKey === 'view-all' ? 'view-all-filter-panel' : 'movies-filter-panel';
+  document.getElementById(panelId).style.display = 'none';
+}
+
+function clearFilters(pageKey) {
+  const prefix = pageKey === 'view-all' ? 'filter-' : 'movies-filter-';
+  document.getElementById(prefix + 'year').value = '';
+  document.getElementById(prefix + 'rating').value = '';
+  document.getElementById(prefix + 'genre').value = '';
+
+  applyFilters(pageKey);
+}
+
+function buildFilterParams(filters, mediaType) {
+  let params = '';
+  if (filters.year) {
+    if (mediaType === 'movie') params += `&primary_release_year=${filters.year}`;
+    else params += `&first_air_date_year=${filters.year}`;
+  }
+  if (filters.rating) {
+    params += `&vote_average.gte=${filters.rating}`;
+  }
+  if (filters.genre) {
+    params += `&with_genres=${filters.genre}`;
+  }
+  return params;
 }
 
 // ============================================================
@@ -972,6 +1324,7 @@ async function loadProviderBatch() {
 async function showDetails(item) {
   currentItem = item;
   addToHistory(item);
+  addToContinueWatching(item);
 
   document.getElementById('modal-poster').src = `${IMG_URL}${item.backdrop_path || item.poster_path}`;
   document.getElementById('modal-title').textContent = item.title || item.name;
@@ -1025,6 +1378,9 @@ async function showDetails(item) {
 
   renderCast(cast);
   renderSimilar(similar, mediaType);
+
+  // Refresh continue watching row
+  renderContinueWatching();
 }
 
 function renderCast(cast) {
@@ -1330,7 +1686,7 @@ function openMoviesPage() {
   page.classList.add('open');
   page.scrollTop = 0;
 
-  moviesPageState = { page: 1, maxPages: 500, loading: false, hasMore: true, initialized: true, seenIds: new Set() };
+  moviesPageState = { page: 1, maxPages: 500, loading: false, hasMore: true, initialized: true, seenIds: new Set(), filters: {} };
 
   document.getElementById('movies-page-grid').innerHTML = '';
   document.getElementById('movies-page-end').style.display = 'none';
@@ -1356,11 +1712,22 @@ async function loadMoviesPageBatch() {
   document.getElementById('movies-page-loading').style.display = 'block';
 
   try {
-    const data = moviesPageState.page <= 2
-      ? await fetchTrending('movie', moviesPageState.page)
-      : await fetchTopRated('movie', moviesPageState.page);
+    let data;
+    const filters = moviesPageState.filters || {};
 
-    moviesPageState.maxPages = data.total_pages;
+    if (filters.year || filters.rating || filters.genre) {
+      const filterParams = buildFilterParams(filters, 'movie');
+      const url = `${BASE_URL}/discover/movie?api_key=${API_KEY}${filterParams}&sort_by=popularity.desc&page=${moviesPageState.page}&without_original_language=${INDIAN_LANGS.join('|')}`;
+      const res = await fetch(url);
+      data = await res.json();
+      data.results = filterNonIndian(data.results);
+    } else {
+      data = moviesPageState.page <= 2
+        ? await fetchTrending('movie', moviesPageState.page)
+        : await fetchTopRated('movie', moviesPageState.page);
+    }
+
+    moviesPageState.maxPages = data.total_pages || 1;
     moviesPageState.page += 1;
 
     const grid = document.getElementById('movies-page-grid');
@@ -1483,7 +1850,7 @@ function openViewAll(key) {
   const genre = GENRE_MAP[key];
   if (!genre) return;
 
-  viewAllState = { key: key, page: 1, maxPages: 500, loading: false, hasMore: true, initialized: true, seenIds: new Set() };
+  viewAllState = { key: key, page: 1, maxPages: 500, loading: false, hasMore: true, initialized: true, seenIds: new Set(), filters: {} };
 
   document.getElementById('view-all-title').textContent = (genre.icon || '🎬') + ' ' + genre.name;
 
@@ -1512,13 +1879,23 @@ async function loadViewAllBatch() {
 
   try {
     let data;
-    if (viewAllState.page <= 2) {
-      data = await fetchTrending(genre.media, viewAllState.page);
+    const filters = viewAllState.filters || {};
+
+    if (filters.year || filters.rating || filters.genre) {
+      const filterParams = buildFilterParams(filters, genre.media);
+      const url = `${BASE_URL}/discover/${genre.media}?api_key=${API_KEY}${filterParams}&sort_by=popularity.desc&page=${viewAllState.page}&without_original_language=${INDIAN_LANGS.join('|')}`;
+      const res = await fetch(url);
+      data = await res.json();
+      data.results = filterNonIndian(data.results);
     } else {
-      data = await fetchTopRated(genre.media, viewAllState.page);
+      if (viewAllState.page <= 2) {
+        data = await fetchTrending(genre.media, viewAllState.page);
+      } else {
+        data = await fetchTopRated(genre.media, viewAllState.page);
+      }
     }
 
-    viewAllState.maxPages = data.total_pages;
+    viewAllState.maxPages = data.total_pages || 1;
     viewAllState.page += 1;
 
     data.results.forEach(function(item) {
@@ -1567,8 +1944,12 @@ async function init() {
     console.log('[MobiFlix] Initializing...');
 
     loadTheme();
-
     renderProviders();
+    renderContinueWatching();
+    updateNotifBadge();
+
+    const notifToggle = document.getElementById('notif-toggle');
+    if (notifToggle) notifToggle.checked = isNotifEnabled();
 
     const [moviesData, tvData, ongoingData, completedData, vivamaxData] = await Promise.all([
       fetchTrending('movie', 1),
@@ -1594,6 +1975,10 @@ async function init() {
 
     completedData.results.forEach(function(item) { item.media_type = 'tv'; });
     appendToList(completedData.results, 'completed-tv-list');
+
+    generateNotifications().catch(function(err) {
+      console.error('[MobiFlix] Notif error:', err);
+    });
 
     console.log('[MobiFlix] Ready.');
   } catch (err) { console.error('[MobiFlix] Init error:', err); }
