@@ -1,5 +1,5 @@
 {
-  "version": "v28",
+  "version": "v29",
   "released": "2026-09-16",
-  "notes": "Fixed: notification panel auto-close, filters now working"
+  "notes": "Filters sa lahat ng pages: Year, Rating, Genre, Sort By (Newest/Oldest)"
 }
