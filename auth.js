@@ -117,7 +117,6 @@ document.addEventListener('DOMContentLoaded', function() {
 // ============================================
 //   AUTO-CHECK SESSION EVERY MINUTE
 // ============================================
-// Kapag nag-expire habang bukas ang app, auto-logout
 setInterval(function() {
   if (!isLoggedIn()) {
     const loginScreen = document.getElementById('login-screen');
@@ -126,4 +125,4 @@ setInterval(function() {
       alert('Your session has expired. Please log in again.');
     }
   }
-}, 60000); // Check every 60 seconds
+}, 60000);
