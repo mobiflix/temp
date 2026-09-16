@@ -9,8 +9,11 @@ const USERS = [
   { username: 'mobiflix', password: '7777' }
 ];
 
-// Ilang araw bago ma-expire yung login session
-const SESSION_DAYS = 1;
+// ============================================
+//   LOGIN EXPIRATION SETTINGS
+// ============================================
+// Ilang ORAS bago ma-expire yung login session
+const SESSION_HOURS = 6;
 
 // ============================================
 //   HUWAG NANG GALAWIN ANG NASA IBABA
@@ -26,7 +29,7 @@ function isLoggedIn() {
 
   const now = Date.now();
   const elapsed = now - parseInt(time, 10);
-  const maxAge = SESSION_DAYS * 24 * 60 * 60 * 1000;
+  const maxAge = SESSION_HOURS * 60 * 60 * 1000;
 
   if (elapsed > maxAge) {
     logout();
@@ -110,3 +113,17 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   }
 });
+
+// ============================================
+//   AUTO-CHECK SESSION EVERY MINUTE
+// ============================================
+// Kapag nag-expire habang bukas ang app, auto-logout
+setInterval(function() {
+  if (!isLoggedIn()) {
+    const loginScreen = document.getElementById('login-screen');
+    if (loginScreen && loginScreen.style.display === 'none') {
+      showLoginScreen();
+      alert('Your session has expired. Please log in again.');
+    }
+  }
+}, 60000); // Check every 60 seconds
