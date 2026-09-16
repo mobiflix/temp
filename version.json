@@ -1,5 +1,5 @@
 {
-  "version": "v27",
+  "version": "v28",
   "released": "2026-09-16",
-  "notes": "Login expiration: 6 hours (per-device) with auto-check"
+  "notes": "Fixed: notification panel auto-close, filters now working"
 }
