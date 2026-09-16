@@ -79,10 +79,10 @@ let bannerItem;
 let currentTvId = null;
 
 let viewAllState = { key: null, page: 1, maxPages: 500, loading: false, hasMore: true, initialized: false, seenIds: new Set(), filters: {} };
-let vivamaxPageState = { page: 1, maxPages: 500, loading: false, hasMore: true, initialized: false, seenIds: new Set() };
-let providerPageState = { providerId: null, providerName: '', providerType: 'provider', page: 1, maxPages: 500, loading: false, hasMore: true, initialized: false, seenIds: new Set() };
+let vivamaxPageState = { page: 1, maxPages: 500, loading: false, hasMore: true, initialized: false, seenIds: new Set(), filters: {} };
+let providerPageState = { providerId: null, providerName: '', providerType: 'provider', page: 1, maxPages: 500, loading: false, hasMore: true, initialized: false, seenIds: new Set(), filters: {} };
 let moviesPageState = { page: 1, maxPages: 500, loading: false, hasMore: true, initialized: false, seenIds: new Set(), filters: {} };
-let seriesPageState = { page: 1, maxPages: 500, loading: false, hasMore: true, initialized: false, seenIds: new Set() };
+let seriesPageState = { page: 1, maxPages: 500, loading: false, hasMore: true, initialized: false, seenIds: new Set(), filters: {} };
 let genrePageState = {};
 let ongoingPageState = {};
 let completedPageState = {};
@@ -364,7 +364,7 @@ function renderContinueWatching() {
 }
 
 // ============================================================
-// THEMES (DARK/LIGHT + COLOR VARIATIONS)
+// THEMES
 // ============================================================
 
 function loadTheme() {
@@ -516,7 +516,6 @@ function closeNotifications() {
   document.getElementById('notif-panel').classList.remove('open');
 }
 
-// I-close ang notification panel kapag nag-click sa labas
 document.addEventListener('click', function(e) {
   const panel = document.getElementById('notif-panel');
   const notifBtn = e.target.closest('button[aria-label="Notifications"]');
@@ -888,11 +887,30 @@ function renderGenresInMore() {
 }
 
 // ============================================================
-// FILTERS
+// FILTERS (UNIFIED)
 // ============================================================
 
+const FILTER_PANEL_MAP = {
+  'view-all': 'view-all-filter-panel',
+  'movies': 'movies-filter-panel',
+  'series': 'series-filter-panel',
+  'provider': 'provider-filter-panel',
+  'genre': 'genre-filter-panel',
+  'vivamax': 'vivamax-filter-panel'
+};
+
+const FILTER_PREFIX_MAP = {
+  'view-all': 'filter-',
+  'movies': 'movies-filter-',
+  'series': 'series-filter-',
+  'provider': 'provider-filter-',
+  'genre': 'genre-filter-',
+  'vivamax': 'vivamax-filter-'
+};
+
 function toggleFilters(pageKey) {
-  const panelId = pageKey === 'view-all' ? 'view-all-filter-panel' : 'movies-filter-panel';
+  const panelId = FILTER_PANEL_MAP[pageKey];
+  if (!panelId) return;
   const panel = document.getElementById(panelId);
   if (!panel) return;
 
@@ -904,21 +922,27 @@ function toggleFilters(pageKey) {
 }
 
 function getFilterValues(pageKey) {
-  const prefix = pageKey === 'view-all' ? 'filter-' : 'movies-filter-';
+  const prefix = FILTER_PREFIX_MAP[pageKey] || 'filter-';
+  const yearEl = document.getElementById(prefix + 'year');
+  const ratingEl = document.getElementById(prefix + 'rating');
+  const genreEl = document.getElementById(prefix + 'genre');
+  const sortEl = document.getElementById(prefix + 'sort');
+
   return {
-    year: document.getElementById(prefix + 'year').value,
-    rating: document.getElementById(prefix + 'rating').value,
-    genre: document.getElementById(prefix + 'genre').value
+    year: yearEl ? yearEl.value : '',
+    rating: ratingEl ? ratingEl.value : '',
+    genre: genreEl ? genreEl.value : '',
+    sort: sortEl ? sortEl.value : 'popularity.desc'
   };
 }
 
 function applyFilters(pageKey) {
   const filters = getFilterValues(pageKey);
 
-  const hasFilters = filters.year || filters.rating || filters.genre;
+  const hasFilter = filters.year || filters.rating || filters.genre;
 
-  if (!hasFilters) {
-    alert('Please select at least one filter.');
+  if (!hasFilter) {
+    alert('Please select at least one filter (Year, Rating, or Genre).');
     return;
   }
 
@@ -936,17 +960,51 @@ function applyFilters(pageKey) {
     document.getElementById('movies-page-grid').innerHTML = '';
     document.getElementById('movies-page-end').style.display = 'none';
     loadMoviesPageBatch();
+  } else if (pageKey === 'series') {
+    seriesPageState.filters = filters;
+    seriesPageState.page = 1;
+    seriesPageState.seenIds = new Set();
+    document.getElementById('series-page-grid').innerHTML = '';
+    document.getElementById('series-page-end').style.display = 'none';
+    loadSeriesPageBatch();
+  } else if (pageKey === 'provider') {
+    providerPageState.filters = filters;
+    providerPageState.page = 1;
+    providerPageState.seenIds = new Set();
+    document.getElementById('provider-page-grid').innerHTML = '';
+    document.getElementById('provider-page-end').style.display = 'none';
+    loadProviderBatch();
+  } else if (pageKey === 'genre') {
+    genrePageState.filters = filters;
+    genrePageState.page = 1;
+    genrePageState.seenIds = new Set();
+    document.getElementById('genre-page-grid').innerHTML = '';
+    document.getElementById('genre-page-end').style.display = 'none';
+    loadGenrePageBatch();
+  } else if (pageKey === 'vivamax') {
+    vivamaxPageState.filters = filters;
+    vivamaxPageState.page = 1;
+    vivamaxPageState.seenIds = new Set();
+    document.getElementById('vivamax-page-grid').innerHTML = '';
+    document.getElementById('vivamax-page-end').style.display = 'none';
+    loadVivamaxBatch();
   }
 
-  const panelId = pageKey === 'view-all' ? 'view-all-filter-panel' : 'movies-filter-panel';
-  document.getElementById(panelId).style.display = 'none';
+  const panelId = FILTER_PANEL_MAP[pageKey];
+  if (panelId) document.getElementById(panelId).style.display = 'none';
 }
 
 function clearFilters(pageKey) {
-  const prefix = pageKey === 'view-all' ? 'filter-' : 'movies-filter-';
-  document.getElementById(prefix + 'year').value = '';
-  document.getElementById(prefix + 'rating').value = '';
-  document.getElementById(prefix + 'genre').value = '';
+  const prefix = FILTER_PREFIX_MAP[pageKey] || 'filter-';
+  const yearEl = document.getElementById(prefix + 'year');
+  const ratingEl = document.getElementById(prefix + 'rating');
+  const genreEl = document.getElementById(prefix + 'genre');
+  const sortEl = document.getElementById(prefix + 'sort');
+
+  if (yearEl) yearEl.value = '';
+  if (ratingEl) ratingEl.value = '';
+  if (genreEl) genreEl.value = '';
+  if (sortEl) sortEl.value = 'popularity.desc';
 
   if (pageKey === 'view-all') {
     viewAllState.filters = {};
@@ -962,7 +1020,38 @@ function clearFilters(pageKey) {
     document.getElementById('movies-page-grid').innerHTML = '';
     document.getElementById('movies-page-end').style.display = 'none';
     loadMoviesPageBatch();
+  } else if (pageKey === 'series') {
+    seriesPageState.filters = {};
+    seriesPageState.page = 1;
+    seriesPageState.seenIds = new Set();
+    document.getElementById('series-page-grid').innerHTML = '';
+    document.getElementById('series-page-end').style.display = 'none';
+    loadSeriesPageBatch();
+  } else if (pageKey === 'provider') {
+    providerPageState.filters = {};
+    providerPageState.page = 1;
+    providerPageState.seenIds = new Set();
+    document.getElementById('provider-page-grid').innerHTML = '';
+    document.getElementById('provider-page-end').style.display = 'none';
+    loadProviderBatch();
+  } else if (pageKey === 'genre') {
+    genrePageState.filters = {};
+    genrePageState.page = 1;
+    genrePageState.seenIds = new Set();
+    document.getElementById('genre-page-grid').innerHTML = '';
+    document.getElementById('genre-page-end').style.display = 'none';
+    loadGenrePageBatch();
+  } else if (pageKey === 'vivamax') {
+    vivamaxPageState.filters = {};
+    vivamaxPageState.page = 1;
+    vivamaxPageState.seenIds = new Set();
+    document.getElementById('vivamax-page-grid').innerHTML = '';
+    document.getElementById('vivamax-page-end').style.display = 'none';
+    loadVivamaxBatch();
   }
+
+  const panelId = FILTER_PANEL_MAP[pageKey];
+  if (panelId) document.getElementById(panelId).style.display = 'none';
 }
 
 function buildFilterParams(filters, mediaType) {
@@ -1041,7 +1130,7 @@ function openVivamaxPage() {
   page.classList.add('open');
   page.scrollTop = 0;
 
-  vivamaxPageState = { page: 1, maxPages: 500, loading: false, hasMore: true, initialized: true, seenIds: new Set() };
+  vivamaxPageState = { page: 1, maxPages: 500, loading: false, hasMore: true, initialized: true, seenIds: new Set(), filters: {} };
 
   document.getElementById('vivamax-page-grid').innerHTML = '';
   document.getElementById('vivamax-page-end').style.display = 'none';
@@ -1067,8 +1156,23 @@ async function loadVivamaxBatch() {
   document.getElementById('vivamax-page-loading').style.display = 'block';
 
   try {
-    const data = await fetchVivamaxMovies(vivamaxPageState.page);
-    vivamaxPageState.maxPages = data.total_pages;
+    const filters = vivamaxPageState.filters || {};
+    const sortBy = filters.sort || 'primary_release_date.desc';
+
+    let url = `${BASE_URL}/discover/movie?api_key=${API_KEY}` +
+      `&with_companies=${VIVAMAX_COMPANY_ID}` +
+      `&sort_by=${sortBy}` +
+      `&include_adult=true` +
+      `&page=${vivamaxPageState.page}`;
+
+    if (filters.year) url += `&primary_release_year=${filters.year}`;
+    if (filters.rating) url += `&vote_average.gte=${filters.rating}`;
+    if (filters.genre) url += `&with_genres=${filters.genre}`;
+
+    const res = await fetch(url);
+    const data = await res.json();
+
+    vivamaxPageState.maxPages = data.total_pages || 1;
     vivamaxPageState.page += 1;
 
     const grid = document.getElementById('vivamax-page-grid');
@@ -1103,7 +1207,7 @@ function openGenrePage(genre) {
   page.classList.add('open');
   page.scrollTop = 0;
 
-  genrePageState = { genre: genre, page: 1, maxPages: 500, loading: false, hasMore: true, initialized: true, seenIds: new Set() };
+  genrePageState = { genre: genre, page: 1, maxPages: 500, loading: false, hasMore: true, initialized: true, seenIds: new Set(), filters: {} };
 
   document.getElementById('genre-page-title').textContent = `${genre.icon} ${genre.name}`;
   document.getElementById('genre-page-grid').innerHTML = '';
@@ -1131,8 +1235,25 @@ async function loadGenrePageBatch() {
 
   try {
     const genre = genrePageState.genre;
-    const data = await fetchByGenre(genre.media, genre.id, genrePageState.page);
-    genrePageState.maxPages = data.total_pages;
+    const filters = genrePageState.filters || {};
+    const sortBy = filters.sort || 'popularity.desc';
+
+    let url = `${BASE_URL}/discover/${genre.media}?api_key=${API_KEY}` +
+      `&with_genres=${genre.id}` +
+      `&sort_by=${sortBy}` +
+      `&page=${genrePageState.page}` +
+      `&without_original_language=${INDIAN_LANGS.join('|')}`;
+
+    if (filters.year) {
+      if (genre.media === 'movie') url += `&primary_release_year=${filters.year}`;
+      else url += `&first_air_date_year=${filters.year}`;
+    }
+    if (filters.rating) url += `&vote_average.gte=${filters.rating}`;
+
+    const res = await fetch(url);
+    const data = await res.json();
+
+    genrePageState.maxPages = data.total_pages || 1;
     genrePageState.page += 1;
 
     const grid = document.getElementById('genre-page-grid');
@@ -1295,7 +1416,8 @@ function openProviderPage(providerId, providerName, providerType) {
     providerId: providerId, providerName: providerName,
     providerType: providerType || 'provider',
     page: 1, maxPages: 500, loading: false,
-    hasMore: true, initialized: true, seenIds: new Set()
+    hasMore: true, initialized: true, seenIds: new Set(),
+    filters: {}
   };
 
   document.getElementById('provider-page-title').textContent = '📡 ' + providerName;
@@ -1322,11 +1444,30 @@ async function loadProviderBatch() {
   document.getElementById('provider-page-loading').style.display = 'block';
 
   try {
+    const filters = providerPageState.filters || {};
+    const sortBy = filters.sort || 'popularity.desc';
+
     const mediaType = providerPageState.page <= 1 ? 'movie' : 'tv';
     const apiPage = Math.ceil(providerPageState.page / 2);
-    const data = await fetchByProvider(providerPageState.providerId, mediaType, apiPage);
 
-    providerPageState.maxPages = data.total_pages;
+    let url = `${BASE_URL}/discover/${mediaType}?api_key=${API_KEY}` +
+      `&with_watch_providers=${providerPageState.providerId}` +
+      `&watch_region=US` +
+      `&page=${apiPage}` +
+      `&sort_by=${sortBy}` +
+      `&without_original_language=${INDIAN_LANGS.join('|')}`;
+
+    if (filters.year) {
+      if (mediaType === 'movie') url += `&primary_release_year=${filters.year}`;
+      else url += `&first_air_date_year=${filters.year}`;
+    }
+    if (filters.rating) url += `&vote_average.gte=${filters.rating}`;
+    if (filters.genre) url += `&with_genres=${filters.genre}`;
+
+    const res = await fetch(url);
+    const data = await res.json();
+
+    providerPageState.maxPages = data.total_pages || 1;
     providerPageState.page += 1;
 
     const grid = document.getElementById('provider-page-grid');
@@ -1335,7 +1476,6 @@ async function loadProviderBatch() {
       if (providerPageState.seenIds.has(item.id)) return;
       providerPageState.seenIds.add(item.id);
       item.media_type = mediaType;
-
       const img = document.createElement('img');
       img.src = `${IMG_W500}${item.poster_path}`;
       img.alt = item.title || item.name;
@@ -1753,10 +1893,11 @@ async function loadMoviesPageBatch() {
     let data;
     const filters = moviesPageState.filters || {};
     const hasFilters = filters.year || filters.rating || filters.genre;
+    const sortBy = filters.sort || 'popularity.desc';
 
     if (hasFilters) {
       const filterParams = buildFilterParams(filters, 'movie');
-      const url = `${BASE_URL}/discover/movie?api_key=${API_KEY}${filterParams}&sort_by=popularity.desc&page=${moviesPageState.page}&without_original_language=${INDIAN_LANGS.join('|')}`;
+      const url = `${BASE_URL}/discover/movie?api_key=${API_KEY}${filterParams}&sort_by=${sortBy}&page=${moviesPageState.page}&without_original_language=${INDIAN_LANGS.join('|')}`;
       const res = await fetch(url);
       data = await res.json();
       data.results = filterNonIndian(data.results);
@@ -1806,7 +1947,7 @@ function openSeriesPage() {
   page.classList.add('open');
   page.scrollTop = 0;
 
-  seriesPageState = { page: 1, maxPages: 500, loading: false, hasMore: true, initialized: true, seenIds: new Set() };
+  seriesPageState = { page: 1, maxPages: 500, loading: false, hasMore: true, initialized: true, seenIds: new Set(), filters: {} };
 
   document.getElementById('series-page-grid').innerHTML = '';
   document.getElementById('series-page-end').style.display = 'none';
@@ -1832,11 +1973,24 @@ async function loadSeriesPageBatch() {
   document.getElementById('series-page-loading').style.display = 'block';
 
   try {
-    const data = seriesPageState.page <= 2
-      ? await fetchTrending('tv', seriesPageState.page)
-      : await fetchTopRated('tv', seriesPageState.page);
+    let data;
+    const filters = seriesPageState.filters || {};
+    const hasFilters = filters.year || filters.rating || filters.genre;
+    const sortBy = filters.sort || 'popularity.desc';
 
-    seriesPageState.maxPages = data.total_pages;
+    if (hasFilters) {
+      const filterParams = buildFilterParams(filters, 'tv');
+      const url = `${BASE_URL}/discover/tv?api_key=${API_KEY}${filterParams}&sort_by=${sortBy}&page=${seriesPageState.page}&without_original_language=${INDIAN_LANGS.join('|')}`;
+      const res = await fetch(url);
+      data = await res.json();
+      data.results = filterNonIndian(data.results);
+    } else {
+      data = seriesPageState.page <= 2
+        ? await fetchTrending('tv', seriesPageState.page)
+        : await fetchTopRated('tv', seriesPageState.page);
+    }
+
+    seriesPageState.maxPages = data.total_pages || 1;
     seriesPageState.page += 1;
 
     const grid = document.getElementById('series-page-grid');
@@ -1920,10 +2074,11 @@ async function loadViewAllBatch() {
     let data;
     const filters = viewAllState.filters || {};
     const hasFilters = filters.year || filters.rating || filters.genre;
+    const sortBy = filters.sort || 'popularity.desc';
 
     if (hasFilters) {
       const filterParams = buildFilterParams(filters, genre.media);
-      const url = `${BASE_URL}/discover/${genre.media}?api_key=${API_KEY}${filterParams}&sort_by=popularity.desc&page=${viewAllState.page}&without_original_language=${INDIAN_LANGS.join('|')}`;
+      const url = `${BASE_URL}/discover/${genre.media}?api_key=${API_KEY}${filterParams}&sort_by=${sortBy}&page=${viewAllState.page}&without_original_language=${INDIAN_LANGS.join('|')}`;
       const res = await fetch(url);
       data = await res.json();
       data.results = filterNonIndian(data.results);
