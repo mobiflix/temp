@@ -1,5 +1,5 @@
 {
-  "version": "v33",
+  "version": "v34",
   "released": "2026-09-17",
-  "notes": "Fixed: Trailer back button (isang click), Filters responsive, Year filter 2015-2026"
+  "notes": "Fixed: Trailer black screen kapag nag-back - auto-close details modal"
 }
