@@ -1,5 +1,5 @@
 {
-  "version": "v34",
+  "version": "v35",
   "released": "2026-09-17",
-  "notes": "Fixed: Trailer black screen kapag nag-back - auto-close details modal"
+  "notes": "Added Telegram float button + extended year filters to 2000"
 }
