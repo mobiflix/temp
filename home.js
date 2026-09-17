@@ -82,7 +82,7 @@ let currentTrailerKey = null;
 
 let viewAllState = { key: null, page: 1, maxPages: 500, loading: false, hasMore: true, initialized: false, seenIds: new Set(), filters: {} };
 let vivamaxPageState = { page: 1, maxPages: 500, loading: false, hasMore: true, initialized: false, seenIds: new Set(), filters: {} };
-let providerPageState = { providerId: null, providerName: '', providerType: 'provider', page: 1, maxPages: 500, loading: false, hasMore: true, initialized: false, seenIds: new Set(), filters: {} };
+let providerPageState = { providerId: null, providerName: '', providerType: 'provider', page: 1, batchCount: 0, maxPages: 500, loading: false, hasMore: true, initialized: false, seenIds: new Set(), filters: {} };
 let moviesPageState = { page: 1, maxPages: 500, loading: false, hasMore: true, initialized: false, seenIds: new Set(), filters: {} };
 let seriesPageState = { page: 1, maxPages: 500, loading: false, hasMore: true, initialized: false, seenIds: new Set(), filters: {} };
 let genrePageState = {};
@@ -258,7 +258,6 @@ function playTrailer() {
   modal.classList.add('open');
   document.body.style.overflow = 'hidden';
 
-  // History state para sa trailer — isang push lang
   history.pushState({ mobiflixTrailer: true }, '');
 }
 
@@ -1056,6 +1055,7 @@ function applyFilters(pageKey) {
   if (pageKey === 'view-all') {
     viewAllState.filters = filters;
     viewAllState.page = 1;
+    viewAllState.hasMore = true;
     viewAllState.seenIds = new Set();
     document.getElementById('view-all-grid').innerHTML = '';
     document.getElementById('view-all-end').style.display = 'none';
@@ -1063,6 +1063,7 @@ function applyFilters(pageKey) {
   } else if (pageKey === 'movies') {
     moviesPageState.filters = filters;
     moviesPageState.page = 1;
+    moviesPageState.hasMore = true;
     moviesPageState.seenIds = new Set();
     document.getElementById('movies-page-grid').innerHTML = '';
     document.getElementById('movies-page-end').style.display = 'none';
@@ -1070,6 +1071,7 @@ function applyFilters(pageKey) {
   } else if (pageKey === 'series') {
     seriesPageState.filters = filters;
     seriesPageState.page = 1;
+    seriesPageState.hasMore = true;
     seriesPageState.seenIds = new Set();
     document.getElementById('series-page-grid').innerHTML = '';
     document.getElementById('series-page-end').style.display = 'none';
@@ -1077,6 +1079,8 @@ function applyFilters(pageKey) {
   } else if (pageKey === 'provider') {
     providerPageState.filters = filters;
     providerPageState.page = 1;
+    providerPageState.batchCount = 0;
+    providerPageState.hasMore = true;
     providerPageState.seenIds = new Set();
     document.getElementById('provider-page-grid').innerHTML = '';
     document.getElementById('provider-page-end').style.display = 'none';
@@ -1084,6 +1088,7 @@ function applyFilters(pageKey) {
   } else if (pageKey === 'genre') {
     genrePageState.filters = filters;
     genrePageState.page = 1;
+    genrePageState.hasMore = true;
     genrePageState.seenIds = new Set();
     document.getElementById('genre-page-grid').innerHTML = '';
     document.getElementById('genre-page-end').style.display = 'none';
@@ -1091,6 +1096,7 @@ function applyFilters(pageKey) {
   } else if (pageKey === 'vivamax') {
     vivamaxPageState.filters = filters;
     vivamaxPageState.page = 1;
+    vivamaxPageState.hasMore = true;
     vivamaxPageState.seenIds = new Set();
     document.getElementById('vivamax-page-grid').innerHTML = '';
     document.getElementById('vivamax-page-end').style.display = 'none';
@@ -1116,6 +1122,7 @@ function clearFilters(pageKey) {
   if (pageKey === 'view-all') {
     viewAllState.filters = {};
     viewAllState.page = 1;
+    viewAllState.hasMore = true;
     viewAllState.seenIds = new Set();
     document.getElementById('view-all-grid').innerHTML = '';
     document.getElementById('view-all-end').style.display = 'none';
@@ -1123,6 +1130,7 @@ function clearFilters(pageKey) {
   } else if (pageKey === 'movies') {
     moviesPageState.filters = {};
     moviesPageState.page = 1;
+    moviesPageState.hasMore = true;
     moviesPageState.seenIds = new Set();
     document.getElementById('movies-page-grid').innerHTML = '';
     document.getElementById('movies-page-end').style.display = 'none';
@@ -1130,6 +1138,7 @@ function clearFilters(pageKey) {
   } else if (pageKey === 'series') {
     seriesPageState.filters = {};
     seriesPageState.page = 1;
+    seriesPageState.hasMore = true;
     seriesPageState.seenIds = new Set();
     document.getElementById('series-page-grid').innerHTML = '';
     document.getElementById('series-page-end').style.display = 'none';
@@ -1137,6 +1146,8 @@ function clearFilters(pageKey) {
   } else if (pageKey === 'provider') {
     providerPageState.filters = {};
     providerPageState.page = 1;
+    providerPageState.batchCount = 0;
+    providerPageState.hasMore = true;
     providerPageState.seenIds = new Set();
     document.getElementById('provider-page-grid').innerHTML = '';
     document.getElementById('provider-page-end').style.display = 'none';
@@ -1144,6 +1155,7 @@ function clearFilters(pageKey) {
   } else if (pageKey === 'genre') {
     genrePageState.filters = {};
     genrePageState.page = 1;
+    genrePageState.hasMore = true;
     genrePageState.seenIds = new Set();
     document.getElementById('genre-page-grid').innerHTML = '';
     document.getElementById('genre-page-end').style.display = 'none';
@@ -1151,6 +1163,7 @@ function clearFilters(pageKey) {
   } else if (pageKey === 'vivamax') {
     vivamaxPageState.filters = {};
     vivamaxPageState.page = 1;
+    vivamaxPageState.hasMore = true;
     vivamaxPageState.seenIds = new Set();
     document.getElementById('vivamax-page-grid').innerHTML = '';
     document.getElementById('vivamax-page-end').style.display = 'none';
@@ -1289,6 +1302,12 @@ async function loadVivamaxBatch() {
     const res = await fetch(url);
     const data = await res.json();
 
+    if (!data.results || data.results.length === 0) {
+      vivamaxPageState.hasMore = false;
+      document.getElementById('vivamax-page-end').style.display = 'block';
+      return;
+    }
+
     vivamaxPageState.maxPages = data.total_pages || 1;
     vivamaxPageState.page += 1;
 
@@ -1369,6 +1388,12 @@ async function loadGenrePageBatch() {
 
     const res = await fetch(url);
     const data = await res.json();
+
+    if (!data.results || data.results.length === 0) {
+      genrePageState.hasMore = false;
+      document.getElementById('genre-page-end').style.display = 'block';
+      return;
+    }
 
     genrePageState.maxPages = data.total_pages || 1;
     genrePageState.page += 1;
@@ -1530,10 +1555,16 @@ function openProviderPage(providerId, providerName, providerType) {
   page.scrollTop = 0;
 
   providerPageState = {
-    providerId: providerId, providerName: providerName,
+    providerId: providerId,
+    providerName: providerName,
     providerType: providerType || 'provider',
-    page: 1, maxPages: 500, loading: false,
-    hasMore: true, initialized: true, seenIds: new Set(),
+    page: 1,
+    batchCount: 0,
+    maxPages: 500,
+    loading: false,
+    hasMore: true,
+    initialized: true,
+    seenIds: new Set(),
     filters: {}
   };
 
@@ -1564,8 +1595,12 @@ async function loadProviderBatch() {
     const filters = providerPageState.filters || {};
     const sortBy = filters.sort || 'popularity.desc';
 
-    const mediaType = providerPageState.page <= 1 ? 'movie' : 'tv';
-    const apiPage = Math.ceil(providerPageState.page / 2);
+    if (typeof providerPageState.batchCount === 'undefined') {
+      providerPageState.batchCount = 0;
+    }
+
+    const mediaType = (providerPageState.batchCount % 2 === 0) ? 'movie' : 'tv';
+    const apiPage = Math.floor(providerPageState.batchCount / 2) + 1;
 
     let url = `${BASE_URL}/discover/${mediaType}?api_key=${API_KEY}` +
       `&with_watch_providers=${providerPageState.providerId}` +
@@ -1584,8 +1619,14 @@ async function loadProviderBatch() {
     const res = await fetch(url);
     const data = await res.json();
 
+    if (!data.results || data.results.length === 0) {
+      providerPageState.hasMore = false;
+      document.getElementById('provider-page-end').style.display = 'block';
+      return;
+    }
+
     providerPageState.maxPages = data.total_pages || 1;
-    providerPageState.page += 1;
+    providerPageState.batchCount += 1;
 
     const grid = document.getElementById('provider-page-grid');
     data.results.forEach(function(item) {
@@ -1602,7 +1643,7 @@ async function loadProviderBatch() {
       grid.appendChild(img);
     });
 
-    if (providerPageState.page > providerPageState.maxPages) {
+    if (apiPage >= providerPageState.maxPages) {
       providerPageState.hasMore = false;
       document.getElementById('provider-page-end').style.display = 'block';
     }
@@ -2044,6 +2085,12 @@ async function loadMoviesPageBatch() {
         : await fetchTopRated('movie', moviesPageState.page);
     }
 
+    if (!data.results || data.results.length === 0) {
+      moviesPageState.hasMore = false;
+      document.getElementById('movies-page-end').style.display = 'block';
+      return;
+    }
+
     moviesPageState.maxPages = data.total_pages || 1;
     moviesPageState.page += 1;
 
@@ -2125,6 +2172,12 @@ async function loadSeriesPageBatch() {
       data = seriesPageState.page <= 2
         ? await fetchTrending('tv', seriesPageState.page)
         : await fetchTopRated('tv', seriesPageState.page);
+    }
+
+    if (!data.results || data.results.length === 0) {
+      seriesPageState.hasMore = false;
+      document.getElementById('series-page-end').style.display = 'block';
+      return;
     }
 
     seriesPageState.maxPages = data.total_pages || 1;
@@ -2225,6 +2278,12 @@ async function loadViewAllBatch() {
       } else {
         data = await fetchTopRated(genre.media, viewAllState.page);
       }
+    }
+
+    if (!data.results || data.results.length === 0) {
+      viewAllState.hasMore = false;
+      document.getElementById('view-all-end').style.display = 'block';
+      return;
     }
 
     viewAllState.maxPages = data.total_pages || 1;
