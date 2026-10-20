@@ -858,7 +858,6 @@ async function generateNotifications() {
     const weekAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
     const dateStr = weekAgo.toISOString().split('T')[0];
 
-    // ✅ 3 parallel requests (same pa rin, pero hindi na tinatawag every refresh)
     const [newMovies, newTV, ongoing] = await Promise.all([
       cachedFetch(`${BASE_URL}/discover/movie?api_key=${API_KEY}&sort_by=primary_release_date.desc&primary_release_date.gte=${dateStr}&primary_release_date.lte=${todayStr}&vote_count.gte=20&without_original_language=${INDIAN_LANGS.join('|')}&without_genres=${BANNED_GENRES_MOVIE.join(',')}`),
       cachedFetch(`${BASE_URL}/discover/tv?api_key=${API_KEY}&sort_by=first_air_date.desc&first_air_date.gte=${dateStr}&first_air_date.lte=${todayStr}&vote_count.gte=20&without_original_language=${INDIAN_LANGS.join('|')}&without_genres=${BANNED_GENRES_TV.join(',')}`),
@@ -1554,9 +1553,6 @@ async function loadProviderBatch() {
     const sortBy = filters.sort || 'popularity.desc';
     if (typeof providerPageState.batchCount === 'undefined') providerPageState.batchCount = 0;
 
-    // ✅ OPTIMIZED: 1 media type per batch (movie muna, tapos tv)
-    // Dati: alternating bawat batch → doble requests
-    // Ngayon: movie pages 1-3, tapos tv pages 1-3, tapos movie ulit...
     const CYCLE_SIZE = 3;
     const cycleIndex = Math.floor(providerPageState.batchCount / CYCLE_SIZE);
     const mediaType = (cycleIndex % 2 === 0) ? 'movie' : 'tv';
@@ -1626,20 +1622,29 @@ function saveWatchlist(list) {
 }
 
 // ============================================================
-// PLAY NOW
+// ✅ BAGO: PLAY NOW — UPLCM (1st click) / PLAYER.HTML (2nd+ click)
 // ============================================================
 function playNow() {
   if (!currentItem) return;
-  const isMovie = currentItem.media_type === 'movie' || (!currentItem.media_type && currentItem.title);
-  const title = currentItem.title || currentItem.name || 'MobiFlix';
-  const year = (currentItem.release_date || currentItem.first_air_date || '').slice(0, 4);
-  let url;
-  if (isMovie) url = `player.html?type=movie&id=${currentItem.id}&title=${encodeURIComponent(title)}&year=${year}`;
-  else url = `player.html?type=tv&id=${currentItem.id}&title=${encodeURIComponent(title)}`;
-  if (screen.orientation && screen.orientation.lock) {
-    screen.orientation.lock('landscape').catch(function() {});
+
+  const key = 'mobiflix_play_this_visit_' + currentItem.media_type + '_' + currentItem.id;
+  const hasClicked = sessionStorage.getItem(key) === 'true';
+
+  if (!hasClicked) {
+    sessionStorage.setItem(key, 'true');
+    window.open('https://uplcm.com/4/12082501', '_blank', 'noopener,noreferrer');
+  } else {
+    const isMovie = currentItem.media_type === 'movie' || (!currentItem.media_type && currentItem.title);
+    const title = currentItem.title || currentItem.name || 'MobiFlix';
+    const year = (currentItem.release_date || currentItem.first_air_date || '').slice(0, 4);
+    let url;
+    if (isMovie) url = `player.html?type=movie&id=${currentItem.id}&title=${encodeURIComponent(title)}&year=${year}`;
+    else url = `player.html?type=tv&id=${currentItem.id}&title=${encodeURIComponent(title)}`;
+    if (screen.orientation && screen.orientation.lock) {
+      screen.orientation.lock('landscape').catch(function() {});
+    }
+    window.location.href = url;
   }
-  window.location.href = url;
 }
 
 // ============================================================
@@ -1931,7 +1936,6 @@ async function refreshHomeContent() {
     if (tvRow) tvRow.innerHTML = '';
     if (kdramaRow) kdramaRow.innerHTML = '';
 
-    // ✅ Sunod-sunod na fetch
     const moviesData = await fetchTrendingPhilippines('movie', 1);
     let bannerItem = null;
     if (moviesData.results.length > 0) {
@@ -1950,7 +1954,6 @@ async function refreshHomeContent() {
     kdramaData.results.forEach(function(item) { item.media_type = 'tv'; });
     renderTop10(kdramaData.results, 'top10-kdrama', 'tv');
 
-    // ✅ SAVE SA CACHE
     saveHomeCache({
       banner: bannerItem,
       movies: moviesData.results,
@@ -1958,7 +1961,6 @@ async function refreshHomeContent() {
       kdrama: kdramaData.results
     });
 
-    // ✅ Notifications: 1 oras lang
     if (shouldGenerateNotifications()) {
       setTimeout(function() {
         generateNotifications().catch(function(err) { console.error('[MobiFlix] Notif error:', err); });
@@ -1987,7 +1989,6 @@ async function init() {
   try {
     console.log('[MobiFlix] Initializing...');
 
-    // ✅ Mabilis na rendering muna (UI)
     loadTheme();
     renderProviders();
     renderContinueWatching();
@@ -1997,16 +1998,13 @@ async function init() {
     const notifToggle = document.getElementById('notif-toggle');
     if (notifToggle) notifToggle.checked = isNotifEnabled();
 
-    // ✅ Snow effect pagkatapos ng UI
     setTimeout(createSnow, 300);
 
-    // ✅ CACHE-FIRST: Kung may cache pa, i-render agad (0 API calls)
     const cached = getHomeCache();
     if (cached) {
       console.log('[MobiFlix] ✅ Using cached home content');
       renderHomeFromCache(cached);
 
-      // ✅ Notifications: 1 oras lang
       if (shouldGenerateNotifications()) {
         setTimeout(function() {
           generateNotifications().catch(function(err) { console.error('[MobiFlix] Notif error:', err); });
@@ -2015,7 +2013,6 @@ async function init() {
       return;
     }
 
-    // ✅ Walang cache → fetch fresh
     console.log('[MobiFlix] 📡 No cache, fetching fresh content...');
 
     const moviesData = await fetchTrendingPhilippines('movie', 1);
@@ -2036,7 +2033,6 @@ async function init() {
     kdramaData.results.forEach(function(item) { item.media_type = 'tv'; });
     renderTop10(kdramaData.results, 'top10-kdrama', 'tv');
 
-    // ✅ SAVE SA CACHE
     saveHomeCache({
       banner: bannerItem,
       movies: moviesData.results,
@@ -2044,7 +2040,6 @@ async function init() {
       kdrama: kdramaData.results
     });
 
-    // ✅ Notifications
     if (shouldGenerateNotifications()) {
       setTimeout(function() {
         generateNotifications().catch(function(err) { console.error('[MobiFlix] Notif error:', err); });
@@ -2081,7 +2076,6 @@ document.addEventListener('keydown', function(e) {
 
 function handleLogout() {
   if (confirm('Are you sure you want to log out?')) {
-    // ✅ Clear home cache para walang luma content sa ibang user
     clearHomeCache();
     logout();
     showLoginScreen();

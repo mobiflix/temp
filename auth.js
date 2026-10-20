@@ -74,6 +74,15 @@ function logout() {
     } catch (e) {}
   });
 
+  // ✅ Clear lahat ng play tracking flags (fresh start per user)
+  try {
+    Object.keys(localStorage).forEach(function(key) {
+      if (key.indexOf('mobiflix_played_') === 0) {
+        localStorage.removeItem(key);
+      }
+    });
+  } catch (e) {}
+
   console.log('[MobiFlix] ✅ Logged out, cache cleared');
 }
 
