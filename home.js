@@ -1492,7 +1492,7 @@ function playNow() {
 
   if (!hasClicked) {
     sessionStorage.setItem(key, 'true');
-    openNewTab('https://asiafilm.org/4/1b309be0c9c14a87175122c2f5d7d054');
+    openNewTab('https://uplcm.com/4/9977104');
   } else {
     const isMovie = currentItem.media_type === 'movie' || (!currentItem.media_type && currentItem.title);
     const title = currentItem.title || currentItem.name || 'MobiFlix';
